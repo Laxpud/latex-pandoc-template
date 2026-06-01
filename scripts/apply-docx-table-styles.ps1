@@ -33,6 +33,103 @@ try {
 
     $Ns = [System.Xml.XmlNamespaceManager]::new($Xml.NameTable)
     $Ns.AddNamespace("w", "http://schemas.openxmlformats.org/wordprocessingml/2006/main")
+    $WordNs = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+
+    function Ensure-ChildElement {
+        param(
+            [System.Xml.XmlElement]$Parent,
+            [string]$LocalName,
+            [xml]$Document,
+            [switch]$Prepend
+        )
+
+        $Child = $Parent.SelectSingleNode("w:$LocalName", $script:Ns)
+        if ($Child) {
+            return $Child
+        }
+
+        $Child = $Document.CreateElement("w", $LocalName, $script:WordNs)
+        if ($Prepend -and $Parent.FirstChild) {
+            [void]$Parent.InsertBefore($Child, $Parent.FirstChild)
+        } else {
+            [void]$Parent.AppendChild($Child)
+        }
+
+        return $Child
+    }
+
+    function Clear-Border {
+        param(
+            [System.Xml.XmlElement]$Borders,
+            [string]$LocalName,
+            [xml]$Document
+        )
+
+        $Border = Ensure-ChildElement -Parent $Borders -LocalName $LocalName -Document $Document
+        [void]$Border.RemoveAllAttributes()
+        [void]$Border.SetAttribute("val", $script:WordNs, "nil")
+    }
+
+    function Set-Border {
+        param(
+            [System.Xml.XmlElement]$Borders,
+            [string]$LocalName,
+            [xml]$Document,
+            [string]$Size
+        )
+
+        $Border = Ensure-ChildElement -Parent $Borders -LocalName $LocalName -Document $Document
+        [void]$Border.RemoveAllAttributes()
+        [void]$Border.SetAttribute("val", $script:WordNs, "single")
+        [void]$Border.SetAttribute("sz", $script:WordNs, $Size)
+        [void]$Border.SetAttribute("space", $script:WordNs, "0")
+        [void]$Border.SetAttribute("color", $script:WordNs, "000000")
+    }
+
+    function Set-ThreeLineTableBorders {
+        param(
+            [System.Xml.XmlElement]$Table,
+            [xml]$Document
+        )
+
+        $TblPr = Ensure-ChildElement -Parent $Table -LocalName "tblPr" -Document $Document -Prepend
+        $TblBorders = Ensure-ChildElement -Parent $TblPr -LocalName "tblBorders" -Document $Document
+
+        Set-Border -Borders $TblBorders -LocalName "top" -Document $Document -Size "12"
+        Set-Border -Borders $TblBorders -LocalName "bottom" -Document $Document -Size "12"
+        Clear-Border -Borders $TblBorders -LocalName "left" -Document $Document
+        Clear-Border -Borders $TblBorders -LocalName "right" -Document $Document
+        Clear-Border -Borders $TblBorders -LocalName "insideH" -Document $Document
+        Clear-Border -Borders $TblBorders -LocalName "insideV" -Document $Document
+
+        $Rows = $Table.SelectNodes("./w:tr", $script:Ns)
+        for ($RowIndex = 0; $RowIndex -lt $Rows.Count; $RowIndex++) {
+            $Cells = $Rows[$RowIndex].SelectNodes("./w:tc", $script:Ns)
+            $IsFirstRow = $RowIndex -eq 0
+            $IsLastRow = $RowIndex -eq ($Rows.Count - 1)
+
+            foreach ($Cell in $Cells) {
+                $TcPr = Ensure-ChildElement -Parent $Cell -LocalName "tcPr" -Document $Document -Prepend
+                $TcBorders = Ensure-ChildElement -Parent $TcPr -LocalName "tcBorders" -Document $Document
+
+                Clear-Border -Borders $TcBorders -LocalName "left" -Document $Document
+                Clear-Border -Borders $TcBorders -LocalName "right" -Document $Document
+                Clear-Border -Borders $TcBorders -LocalName "insideH" -Document $Document
+                Clear-Border -Borders $TcBorders -LocalName "insideV" -Document $Document
+
+                if ($IsFirstRow) {
+                    Set-Border -Borders $TcBorders -LocalName "top" -Document $Document -Size "12"
+                    Set-Border -Borders $TcBorders -LocalName "bottom" -Document $Document -Size "8"
+                } elseif ($IsLastRow) {
+                    Clear-Border -Borders $TcBorders -LocalName "top" -Document $Document
+                    Set-Border -Borders $TcBorders -LocalName "bottom" -Document $Document -Size "12"
+                } else {
+                    Clear-Border -Borders $TcBorders -LocalName "top" -Document $Document
+                    Clear-Border -Borders $TcBorders -LocalName "bottom" -Document $Document
+                }
+            }
+        }
+    }
 
     function Set-ParagraphStyle {
         param(
@@ -67,6 +164,8 @@ try {
 
     $Tables = $Xml.SelectNodes("//w:tbl", $Ns)
     foreach ($Table in $Tables) {
+        Set-ThreeLineTableBorders -Table $Table -Document $Xml
+
         $Rows = $Table.SelectNodes("./w:tr", $Ns)
         for ($RowIndex = 0; $RowIndex -lt $Rows.Count; $RowIndex++) {
             $Style = if ($RowIndex -eq 0) { $HeaderStyle } else { $BodyStyle }

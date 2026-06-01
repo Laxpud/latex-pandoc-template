@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <style xmlns="http://purl.org/net/xbiblio/csl" class="in-text" version="1.0" page-range-format="expanded" default-locale="zh-CN">
   <info>
-    <title>Minimal Chinese Numeric Superscript</title>
-    <id>http://www.zotero.org/styles/minimal-chinese-numeric-superscript</id>
-    <link href="http://www.zotero.org/styles/minimal-chinese-numeric-superscript" rel="self"/>
+    <title>GB/T 7714-2015 Numeric Superscript for latex-pandoc-template</title>
+    <id>http://www.zotero.org/styles/latex-pandoc-template-gbt7714-unsrt</id>
+    <link href="http://www.zotero.org/styles/latex-pandoc-template-gbt7714-unsrt" rel="self"/>
     <author>
       <name>latex-pandoc-template</name>
     </author>
@@ -13,72 +13,254 @@
     <rights license="http://creativecommons.org/licenses/by-sa/3.0/">This work is licensed under a Creative Commons Attribution-ShareAlike 3.0 License</rights>
   </info>
 
+  <locale>
+    <terms>
+      <term name="et-al">et al.</term>
+      <term name="page-range-delimiter">-</term>
+    </terms>
+  </locale>
+
   <macro name="author">
     <names variable="author">
-      <name initialize-with=". " name-as-sort-order="all" sort-separator=" "/>
+      <name initialize-with=" " name-as-sort-order="all" sort-separator=" " delimiter=", " delimiter-precedes-last="never" delimiter-precedes-et-al="always" et-al-min="4" et-al-use-first="3">
+        <name-part name="family" text-case="uppercase"/>
+        <name-part name="given" text-case="uppercase"/>
+      </name>
       <substitute>
-        <names variable="editor"/>
-        <text variable="title"/>
+        <names variable="editor">
+          <name initialize-with=" " name-as-sort-order="all" sort-separator=" " delimiter=", " delimiter-precedes-last="never" delimiter-precedes-et-al="always" et-al-min="4" et-al-use-first="3">
+            <name-part name="family" text-case="uppercase"/>
+            <name-part name="given" text-case="uppercase"/>
+          </name>
+        </names>
+        <text variable="title" text-case="sentence"/>
       </substitute>
     </names>
   </macro>
 
-  <macro name="title">
-    <text variable="title"/>
+  <macro name="editor">
+    <names variable="editor">
+      <name initialize-with=" " name-as-sort-order="all" sort-separator=" " delimiter=", " delimiter-precedes-last="never" delimiter-precedes-et-al="always" et-al-min="4" et-al-use-first="3">
+        <name-part name="family" text-case="uppercase"/>
+        <name-part name="given" text-case="uppercase"/>
+      </name>
+    </names>
   </macro>
 
-  <macro name="container">
+  <macro name="issued-year">
+    <date variable="issued">
+      <date-part name="year"/>
+    </date>
+  </macro>
+
+  <macro name="type-mark">
     <choose>
       <if type="article-journal">
-        <group delimiter=", ">
-          <text variable="container-title"/>
-          <group>
-            <date variable="issued">
-              <date-part name="year"/>
-            </date>
-          </group>
+        <choose>
+          <if variable="DOI URL" match="any">
+            <text value="[J/OL]"/>
+          </if>
+          <else>
+            <text value="[J]"/>
+          </else>
+        </choose>
+      </if>
+      <else-if type="paper-conference">
+        <choose>
+          <if variable="DOI URL" match="any">
+            <text value="[C/OL]"/>
+          </if>
+          <else>
+            <text value="[C]"/>
+          </else>
+        </choose>
+      </else-if>
+      <else-if type="report">
+        <text value="[R]"/>
+      </else-if>
+      <else-if type="book chapter" match="any">
+        <text value="[M]"/>
+      </else-if>
+      <else-if type="webpage post-weblog post" match="any">
+        <text value="[EB/OL]"/>
+      </else-if>
+      <else>
+        <text value="[Z]"/>
+      </else>
+    </choose>
+  </macro>
+
+  <macro name="title-with-mark">
+    <group delimiter="">
+      <text variable="title" text-case="sentence"/>
+      <choose>
+        <if type="report">
+          <text variable="number" prefix=": "/>
+        </if>
+      </choose>
+      <text macro="type-mark"/>
+      <choose>
+        <if type="paper-conference">
+          <text value="//"/>
+        </if>
+        <else-if type="chapter" variable="container-title" match="all">
+          <text value="//"/>
+        </else-if>
+      </choose>
+    </group>
+  </macro>
+
+  <macro name="publisher-block">
+    <choose>
+      <if variable="publisher-place publisher" match="none">
+        <text value="[S.l.: s.n.]"/>
+      </if>
+      <else>
+        <group delimiter=": ">
+          <choose>
+            <if variable="publisher-place">
+              <text variable="publisher-place"/>
+            </if>
+            <else>
+              <text value="[S.l.]"/>
+            </else>
+          </choose>
+          <choose>
+            <if variable="publisher">
+              <text variable="publisher"/>
+            </if>
+            <else>
+              <text value="[s.n.]"/>
+            </else>
+          </choose>
+        </group>
+      </else>
+    </choose>
+  </macro>
+
+  <macro name="publisher-year-pages">
+    <group delimiter=", ">
+      <text macro="publisher-block"/>
+      <group delimiter="">
+        <text macro="issued-year"/>
+        <text variable="page" prefix=": "/>
+      </group>
+    </group>
+  </macro>
+
+  <macro name="conference-publisher">
+    <choose>
+      <if variable="publisher">
+        <text variable="publisher"/>
+      </if>
+      <else>
+        <text value="[S.l.: s.n.]"/>
+      </else>
+    </choose>
+  </macro>
+
+  <macro name="journal-details">
+    <group delimiter=", ">
+      <text variable="container-title"/>
+      <text macro="issued-year"/>
+      <choose>
+        <if variable="volume">
           <group delimiter="">
             <text variable="volume"/>
             <group prefix="(" suffix=")">
               <text variable="issue"/>
             </group>
+            <text variable="page" prefix=": "/>
           </group>
+        </if>
+        <else-if variable="page">
           <text variable="page"/>
+        </else-if>
+      </choose>
+    </group>
+  </macro>
+
+  <macro name="conference-details">
+    <group delimiter=". ">
+      <text variable="container-title" text-case="title"/>
+      <group delimiter=", ">
+        <text macro="conference-publisher"/>
+        <group delimiter="">
+          <text macro="issued-year"/>
+          <text variable="page" prefix=": "/>
+        </group>
+      </group>
+    </group>
+  </macro>
+
+  <macro name="chapter-container">
+    <group delimiter=" ">
+      <choose>
+        <if variable="collection-title volume" match="any">
+          <group delimiter=": ">
+            <text variable="collection-title"/>
+            <group delimiter=" ">
+              <text value="volume"/>
+              <text variable="volume"/>
+            </group>
+          </group>
+        </if>
+      </choose>
+      <text variable="container-title" text-case="title"/>
+    </group>
+  </macro>
+
+  <macro name="chapter-details">
+    <choose>
+      <if variable="container-title">
+        <group delimiter=". ">
+          <text macro="editor"/>
+          <text macro="chapter-container"/>
+          <text macro="publisher-year-pages"/>
         </group>
       </if>
+      <else>
+        <text macro="publisher-year-pages"/>
+      </else>
+    </choose>
+  </macro>
+
+  <macro name="webpage-details">
+    <group delimiter=", ">
+      <text variable="publisher"/>
+      <text macro="issued-year"/>
+    </group>
+  </macro>
+
+  <macro name="fallback-details">
+    <group delimiter=", ">
+      <text value="[S.l.: s.n.]"/>
+      <text macro="issued-year"/>
+    </group>
+  </macro>
+
+  <macro name="container-details">
+    <choose>
+      <if type="article-journal">
+        <text macro="journal-details"/>
+      </if>
       <else-if type="paper-conference">
-        <group delimiter=", ">
-          <text variable="container-title"/>
-          <text variable="event-place"/>
-          <date variable="issued">
-            <date-part name="year"/>
-          </date>
-          <text variable="page"/>
-        </group>
+        <text macro="conference-details"/>
+      </else-if>
+      <else-if type="book">
+        <text macro="publisher-year-pages"/>
       </else-if>
       <else-if type="chapter">
-        <group delimiter=", ">
-          <text variable="container-title"/>
-          <names variable="editor" prefix="In: ">
-            <name initialize-with=". "/>
-          </names>
-          <text variable="publisher-place"/>
-          <text variable="publisher"/>
-          <date variable="issued">
-            <date-part name="year"/>
-          </date>
-          <text variable="page"/>
-        </group>
+        <text macro="chapter-details"/>
+      </else-if>
+      <else-if type="report">
+        <text macro="publisher-year-pages"/>
+      </else-if>
+      <else-if type="webpage post-weblog post" match="any">
+        <text macro="webpage-details"/>
       </else-if>
       <else>
-        <group delimiter=", ">
-          <text variable="publisher-place"/>
-          <text variable="publisher"/>
-          <date variable="issued">
-            <date-part name="year"/>
-          </date>
-          <text variable="page"/>
-        </group>
+        <text macro="fallback-details"/>
       </else>
     </choose>
   </macro>
@@ -86,11 +268,44 @@
   <macro name="access">
     <choose>
       <if variable="DOI">
-        <text variable="DOI" prefix="doi: "/>
+        <text variable="DOI" prefix="DOI: "/>
       </if>
       <else-if variable="URL">
         <text variable="URL"/>
       </else-if>
+    </choose>
+  </macro>
+
+  <macro name="entry-body">
+    <choose>
+      <if type="paper-conference">
+        <group delimiter=". ">
+          <text macro="author"/>
+          <group delimiter="">
+            <text macro="title-with-mark"/>
+            <text macro="container-details"/>
+          </group>
+          <text macro="access"/>
+        </group>
+      </if>
+      <else-if type="chapter" variable="container-title" match="all">
+        <group delimiter=". ">
+          <text macro="author"/>
+          <group delimiter="">
+            <text macro="title-with-mark"/>
+            <text macro="container-details"/>
+          </group>
+          <text macro="access"/>
+        </group>
+      </else-if>
+      <else>
+        <group delimiter=". ">
+          <text macro="author"/>
+          <text macro="title-with-mark"/>
+          <text macro="container-details"/>
+          <text macro="access"/>
+        </group>
+      </else>
     </choose>
   </macro>
 
@@ -106,12 +321,7 @@
   <bibliography entry-spacing="0" second-field-align="flush">
     <layout suffix=".">
       <text variable="citation-number" prefix="[" suffix="]"/>
-      <group delimiter=". ">
-        <text macro="author"/>
-        <text macro="title"/>
-        <text macro="container"/>
-        <text macro="access"/>
-      </group>
+      <text macro="entry-body"/>
     </layout>
   </bibliography>
 </style>

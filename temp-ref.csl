@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<style xmlns="http://purl.org/net/xbiblio/csl" class="in-text" version="1.0" page-range-format="expanded" default-locale="zh-CN">
+  <info>
+    <title>Minimal Chinese Numeric Superscript</title>
+    <id>http://www.zotero.org/styles/minimal-chinese-numeric-superscript</id>
+    <link href="http://www.zotero.org/styles/minimal-chinese-numeric-superscript" rel="self"/>
+    <author>
+      <name>latex-pandoc-template</name>
+    </author>
+    <category citation-format="numeric"/>
+    <category field="engineering"/>
+    <updated>2026-06-01T00:00:00+00:00</updated>
+    <rights license="http://creativecommons.org/licenses/by-sa/3.0/">This work is licensed under a Creative Commons Attribution-ShareAlike 3.0 License</rights>
+  </info>
+
+  <macro name="author">
+    <names variable="author">
+      <name initialize-with=". " name-as-sort-order="all" sort-separator=" "/>
+      <substitute>
+        <names variable="editor"/>
+        <text variable="title"/>
+      </substitute>
+    </names>
+  </macro>
+
+  <macro name="title">
+    <text variable="title"/>
+  </macro>
+
+  <macro name="container">
+    <choose>
+      <if type="article-journal">
+        <group delimiter=", ">
+          <text variable="container-title"/>
+          <group>
+            <date variable="issued">
+              <date-part name="year"/>
+            </date>
+          </group>
+          <group delimiter="">
+            <text variable="volume"/>
+            <group prefix="(" suffix=")">
+              <text variable="issue"/>
+            </group>
+          </group>
+          <text variable="page"/>
+        </group>
+      </if>
+      <else-if type="paper-conference">
+        <group delimiter=", ">
+          <text variable="container-title"/>
+          <text variable="event-place"/>
+          <date variable="issued">
+            <date-part name="year"/>
+          </date>
+          <text variable="page"/>
+        </group>
+      </else-if>
+      <else-if type="chapter">
+        <group delimiter=", ">
+          <text variable="container-title"/>
+          <names variable="editor" prefix="In: ">
+            <name initialize-with=". "/>
+          </names>
+          <text variable="publisher-place"/>
+          <text variable="publisher"/>
+          <date variable="issued">
+            <date-part name="year"/>
+          </date>
+          <text variable="page"/>
+        </group>
+      </else-if>
+      <else>
+        <group delimiter=", ">
+          <text variable="publisher-place"/>
+          <text variable="publisher"/>
+          <date variable="issued">
+            <date-part name="year"/>
+          </date>
+          <text variable="page"/>
+        </group>
+      </else>
+    </choose>
+  </macro>
+
+  <macro name="access">
+    <choose>
+      <if variable="DOI">
+        <text variable="DOI" prefix="doi: "/>
+      </if>
+      <else-if variable="URL">
+        <text variable="URL"/>
+      </else-if>
+    </choose>
+  </macro>
+
+  <citation collapse="citation-number">
+    <sort>
+      <key variable="citation-number"/>
+    </sort>
+    <layout prefix="[" suffix="]" delimiter=", " vertical-align="sup">
+      <text variable="citation-number"/>
+    </layout>
+  </citation>
+
+  <bibliography entry-spacing="0" second-field-align="flush">
+    <layout suffix=".">
+      <text variable="citation-number" prefix="[" suffix="]"/>
+      <group delimiter=". ">
+        <text macro="author"/>
+        <text macro="title"/>
+        <text macro="container"/>
+        <text macro="access"/>
+      </group>
+    </layout>
+  </bibliography>
+</style>

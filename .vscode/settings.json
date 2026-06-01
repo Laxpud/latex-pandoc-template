@@ -9,10 +9,10 @@
             ]
         },
         {
-            "name": "xelatex -> biber -> xelatex*2",
+            "name": "xelatex -> bibtex -> xelatex*2",
             "tools": [
                 "xelatex",
-                "biber",
+                "bibtex",
                 "xelatex",
                 "xelatex"
             ]
@@ -31,8 +31,8 @@
             "env": {}
         },
         {
-            "name": "biber",
-            "command": "biber",
+            "name": "bibtex",
+            "command": "bibtex",
             "args": [
                 "%DOCFILE%"
             ],

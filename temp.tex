@@ -1,0 +1,107 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[UTF8]{ctex}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage[super,square,numbers,sort&compress]{natbib}
+\usepackage{graphicx}
+
+\graphicspath{{fig/}{refference/fig/}}
+
+\title{适合 Pandoc 转 Word 的极简论文手稿示例}
+\author{张三\thanks{通信作者：zhangsan@example.com} \and 李四}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+本文给出一个极简 LaTeX 论文手稿示例，目标是在保留论文常用语义元素的同时，尽量避免复杂期刊排版命令，从而提高 Pandoc 转换为 Word 文档时的稳定性。模板包含标题、作者、摘要、关键词、章节层级、图表、公式、交叉引用和参考文献等常见内容。
+\end{abstract}
+
+\noindent\textbf{关键词：} Pandoc；LaTeX；Word；论文手稿；交叉引用
+
+\section{引言}
+\label{sec:introduction}
+
+论文初稿通常更重视内容结构和审阅便利性，而不是期刊最终排版。为了便于转换为 Word，建议手稿中优先使用标准 LaTeX 命令，例如章节命令、图表环境、公式环境和普通引用命令。
+
+本文的结构如下：第~\ref{sec:method} 节介绍基本写法，第~\ref{sec:results} 节给出图表和公式示例，第~\ref{sec:conclusion} 节总结使用建议。旋转机械噪声理论可参考期刊论文~\cite{ffowcswilliams1969theory}，倾转翼 eVTOL 噪声分析可参考会议论文~\cite{higgins2020aeroacoustic}，旋翼空气动力学基础可参考专著和书中章节~\cite{Johnson80a,Leishman00}。
+
+\section{方法}
+\label{sec:method}
+
+\subsection{手稿结构}
+\label{subsec:structure}
+
+手稿结构建议保持简单。标题、作者、摘要和关键词放在正文开头；正文使用 \verb|\section|、\verb|\subsection| 和 \verb|\subsubsection| 表示层级；图、表、公式使用标准浮动体和数学环境。
+
+\subsubsection{三级标题示例}
+\label{subsubsec:third-level}
+
+三级标题可用于细分方法、实验条件或推导步骤。若后续需要投递期刊，可在定稿阶段再迁移到期刊模板，而不是在初稿阶段混入大量版式命令。
+
+\subsection{公式与引用}
+\label{subsec:equation}
+
+公式建议使用标准 \verb|equation| 环境。式~\ref{eq:sample} 给出一个简单的线性模型：
+
+\begin{equation}
+  y = ax + b
+  \label{eq:sample}
+\end{equation}
+
+其中，$x$ 为自变量，$y$ 为因变量，$a$ 和 $b$ 分别为模型参数。正文中可以继续引用式~\ref{eq:sample}，但不建议使用期刊模板专用的自定义引用命令。
+
+\section{结果与讨论}
+\label{sec:results}
+
+\subsection{图片示例}
+\label{subsec:figure}
+
+图~\ref{fig:sample} 展示了一个普通图片环境。为了便于 Pandoc 识别，建议每个图片只保留一个 \verb|\caption|，不要使用双语图题计数器回退等复杂写法。
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.65\linewidth]{cover-kqdlxxb.jpg}
+  \caption{图片示例：期刊封面占位图}
+  \label{fig:sample}
+\end{figure}
+
+\subsection{表格示例}
+\label{subsec:table}
+
+表~\ref{tab:sample} 给出一个三线表。表格中可以使用 \verb|booktabs| 的 \verb|\toprule|、\verb|\midrule| 和 \verb|\bottomrule|，这类结构通常比复杂合并单元格更利于转换。
+
+\begin{table}[htbp]
+  \centering
+  \caption{表格示例：模型参数}
+  \label{tab:sample}
+  \begin{tabular}{lcc}
+    \toprule
+    参数 & 数值 & 单位 \\
+    \midrule
+    斜率 $a$ & 1.20 & -- \\
+    截距 $b$ & 0.35 & -- \\
+    样本数 $n$ & 100 & -- \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{综合引用示例}
+\label{subsec:cross-reference}
+
+在讨论中可以同时引用多个对象。例如，第~\ref{subsec:equation} 节定义了模型，式~\ref{eq:sample} 给出了数学表达，图~\ref{fig:sample} 和表~\ref{tab:sample} 分别展示了图片和表格的写法。关于旋翼系统分析，还可参考技术报告~\cite{Straub84}、论文集章节~\cite{Friedmann93}、早期会议论文~\cite{Sadler}、普通网络或未出版资料~\cite{Patashnik}，以及在线资料~\cite{Roy:compworld2023}。
+
+\section{结论}
+\label{sec:conclusion}
+
+本文示例保留了论文手稿的核心语义元素，同时删除了期刊模板中的页眉页脚、双栏、字体、复杂标题页和专用参考文献宏。这样的写法更适合作为 Pandoc 转 Word 审阅稿的源文件。
+
+本模板的参考文献文件基本覆盖了一篇论文中常见的文献类型，包括期刊论文~\cite{ffowcswilliams1969theory}、会议论文~\cite{higgins2020aeroacoustic,Sadler}、技术报告~\cite{Straub84}、专著~\cite{Johnson80a}、书中章节~\cite{Leishman00}、论文集章节~\cite{Friedmann93}、普通未出版或网络资料~\cite{Patashnik}，以及在线资料~\cite{Roy:compworld2023}；在 Pandoc 转 Word 时，这些引用可以通过同一个 BibTeX 数据库统一管理。
+
+\bibliographystyle{temp-ref}
+\bibliography{temp-ref}
+
+\end{document}

@@ -14,8 +14,8 @@ $ResourcePath = ".;fig;refference/fig"
 $PandocArgs = @(
     $InputFile,
     "-o", $OutputFile,
-    "--lua-filter=$Filter",
     "--citeproc",
+    "--lua-filter=$Filter",
     "--bibliography=$Bibliography",
     "--csl=$Csl",
     "--resource-path=$ResourcePath"
@@ -26,3 +26,6 @@ if ($ReferenceDoc) {
 }
 
 pandoc @PandocArgs
+
+$TableStyleScript = Join-Path $PSScriptRoot "apply-docx-table-styles.ps1"
+& $TableStyleScript -DocxFile $OutputFile

@@ -27,5 +27,12 @@
 *.acr
 *.alg
 
-
+# Generated documents
 *.docx
+*.pdf
+!fig/
+!fig/*.pdf
+!fig/**/*.pdf
+
+# Original journal template/reference files
+refference/

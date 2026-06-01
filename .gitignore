@@ -33,6 +33,10 @@
 !fig/
 !fig/*.pdf
 !fig/**/*.pdf
+.pandoc-cache/
+.venv/
+__pycache__/
+*.pyc
 
 # Original journal template/reference files
 refference/

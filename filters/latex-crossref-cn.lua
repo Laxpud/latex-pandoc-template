@@ -52,17 +52,33 @@ local function style_plain_or_para(block, style_name)
   return styled_div({ block }, style_name)
 end
 
+local function style_prefixed_plain_or_para(block, prefix, style_name)
+  if block.t == "Plain" or block.t == "Para" then
+    if stringify(block.content):match("^" .. prefix) then
+      return style_plain_or_para(block, style_name)
+    end
+
+    local content = { pandoc.Strong({ pandoc.Str(prefix) }) }
+    for _, inline in ipairs(block.content) do
+      table.insert(content, inline)
+    end
+    return styled_para(content, style_name)
+  end
+
+  return styled_div({ block }, style_name)
+end
+
 local function meta_blocks(meta_value)
   if not meta_value then
     return {}
   end
 
+  local first = meta_value[1]
+  if first and (first.t == "Plain" or first.t == "Para" or first.t == "Div") then
+    return meta_value
+  end
   if meta_value.t == "MetaBlocks" then
-    if meta_value.blocks then
-      return meta_value.blocks
-    end
-    local text = stringify_meta(meta_value)
-    return text ~= "" and { pandoc.Para({ pandoc.Str(text) }) } or {}
+    return meta_value
   end
   if meta_value.t == "MetaInlines" then
     return { pandoc.Para(meta_value) }
@@ -195,8 +211,12 @@ local function front_matter_blocks(meta)
   end
 
   local abstract = meta_blocks(meta.abstract)
-  for _, block in ipairs(abstract) do
-    table.insert(blocks, style_plain_or_para(block, styles.abstract))
+  for i, block in ipairs(abstract) do
+    if i == 1 then
+      table.insert(blocks, style_prefixed_plain_or_para(block, "摘要：", styles.abstract))
+    else
+      table.insert(blocks, style_plain_or_para(block, styles.abstract))
+    end
   end
 
   return blocks
@@ -411,6 +431,10 @@ function Pandoc(doc)
     for i = #front, 1, -1 do
       table.insert(doc.blocks, 1, front[i])
     end
+    doc.meta.title = nil
+    doc.meta.author = nil
+    doc.meta.date = nil
+    doc.meta.abstract = nil
   end
   return doc:walk({ Link = replace_ref_link })
 end

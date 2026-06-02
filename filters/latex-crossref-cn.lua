@@ -3,6 +3,9 @@
 
 local refs = {}
 local counters = { fig = 0, tab = 0, eq = 0 }
+local config = {
+  normalize_cjk_ascii_spacing = false
+}
 local styles = {
   title = "LptPaperTitle",
   author = "LptAuthorBlock",
@@ -33,6 +36,27 @@ end
 local function stringify_meta(meta_value)
   local text = pandoc.utils.stringify(meta_value)
   return text:gsub("^%s+", ""):gsub("%s+$", "")
+end
+
+local function config_bool(meta, key, default)
+  local value = meta and meta[key]
+  if value == nil then
+    return default
+  end
+
+  if type(value) == "boolean" then
+    return value
+  end
+
+  local text = stringify_meta(value):lower()
+  if text == "true" or text == "yes" or text == "1" or text == "on" then
+    return true
+  end
+  if text == "false" or text == "no" or text == "0" or text == "off" then
+    return false
+  end
+
+  return default
 end
 
 local function styled_div(blocks, style_name, identifier, classes, attributes)
@@ -731,6 +755,8 @@ function Pandoc(doc)
     doc.meta.abstract = nil
   end
   doc = doc:walk({ Link = replace_ref_link })
-  doc.blocks = normalize_blocks_spacing(doc.blocks)
+  if config_bool(doc.meta, "lpt-normalize-cjk-ascii-spacing", config.normalize_cjk_ascii_spacing) then
+    doc.blocks = normalize_blocks_spacing(doc.blocks)
+  end
   return doc
 end

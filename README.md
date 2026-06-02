@@ -11,12 +11,24 @@
 
 ## 环境准备
 
-需要安装以下工具：
+最低需要安装以下工具：
 
 - TeX Live，并确保 `xelatex` 和 `bibtex` 可用。
 - Pandoc。
 - PowerShell。
-- uv，用来运行 Python 图片预处理脚本。
+- uv，用来创建 Python 环境并运行图片预处理脚本。
+
+可选编辑器环境：
+
+- VS Code。
+- LaTeX Workshop 扩展。
+
+本仓库的 `.vscode/settings.json` 已经写好 LaTeX Workshop 配方：
+
+- `latexmk`：使用 `latexmk -xelatex` 自动处理多轮编译。
+- `xelatex -> bibtex -> xelatex*2`：手动指定完整的参考文献编译流程。
+
+为了避免打开文件后自动反复编译，仓库中已将 `latex-workshop.latex.autoBuild.run` 设置为 `never`。需要编译时，可在 VS Code 命令面板中执行 `LaTeX Workshop: Build with recipe` 并选择对应配方。
 
 首次使用时，在仓库根目录运行：
 
@@ -24,22 +36,52 @@
 uv sync
 ```
 
-## 文件说明
+当前本机已验证的主要环境：
 
-- `temp.tex`：论文主文件，正文、摘要、关键词、图表和公式都从这里改。
-- `temp-ref.bib`：BibTeX 参考文献数据库。
-- `temp-ref.bst`：LaTeX 编译 PDF 时使用的参考文献样式。
-- `temp-ref.csl`：Pandoc 转 Word 时使用的参考文献样式。
-- `reference.docx`：Pandoc 转 Word 时使用的 Word 样式模板。
-- `fig/`：正文图片目录。
-- `scripts/tex-to-docx.ps1`：将 LaTeX 手稿转换为 Word 的主脚本。
-- `scripts/namespace-reference-docx-styles.py`：将 Word 样式模板中的项目样式 ID 规范化为 `Lpt...` 前缀，避免和 Word/Pandoc 内置样式冲突。
-- `filters/latex-crossref-cn.lua`：Pandoc Lua filter，用于处理中文图表题、公式编号、交叉引用和 Word 段落样式。
-- `.pandoc-cache/`：转换 Word 时生成的临时文件目录，会被 Git 忽略。
+- XeTeX 3.141592653-2.6-0.999998，TeX Live 2026。
+- Pandoc 3.8，Lua 5.4。
+- uv 0.10.4。
+- uv Python 3.14.3。
+- Python 依赖：`PyMuPDF>=1.24.0`。
+
+更完整的文件说明、转换链路和维护细节见 [技术栈与实现说明](doc/technical-stack.md)。
+
+## 快速开始
+
+1. 编辑 `temp.tex`。
+2. 运行 `uv sync` 准备 Python 依赖。
+3. 编译 PDF，或在 VS Code 中选择 LaTeX Workshop 配方。
+4. 运行 `.\convert-docx.ps1` 转换 Word 审阅稿。
+
+## 第一次使用时主要改哪些文件
+
+如果你刚开始接触 LaTeX，通常只需要关注这几个位置：
+
+- `temp.tex`：论文正文。标题、作者、摘要、关键词、章节、图表、公式和引用都从这里改。
+- `reference.bib`：参考文献数据库。新增论文、书籍、网页等文献条目时改这里。
+- `fig/`：正文图片目录。把论文中需要使用的 PNG、JPG、PDF 图片放到这里。
+
+写作时建议从 `temp.tex` 里的示例结构开始替换内容，不要一开始就大幅改导言区和转换脚本。需要了解每个文件的具体职责时，再看 [技术栈与实现说明](doc/technical-stack.md)。
+
+## 第一次使用时先注意哪些文件
+
+下面这些文件通常不需要在写作初稿时修改：
+
+- `gbt7714.bst` 和 `gbt7714.csl`：分别用于 PDF 和 Word 的参考文献格式。
+- `reference.docx`：Word 样式模板，只有需要调整 Word 输出样式时再改。
+- `.vscode/settings.json`：VS Code 编译配方，已经配置好 LaTeX Workshop。
+- `convert-docx.ps1`、`scripts/` 和 `filters/`：Word 转换流程相关脚本，日常写作只需要运行，不需要修改。
+- `.pandoc-cache/`、`.venv/` 和 LaTeX 辅助文件：自动生成内容，不需要手动维护，也不需要提交到 Git。
 
 ## 编译 PDF
 
-在仓库根目录运行：
+可以在 VS Code 中使用 LaTeX Workshop：
+
+1. 打开 `temp.tex`。
+2. 执行 `LaTeX Workshop: Build with recipe`。
+3. 选择 `latexmk` 或 `xelatex -> bibtex -> xelatex*2`。
+
+也可以在仓库根目录手动运行：
 
 ```powershell
 xelatex -interaction=nonstopmode temp.tex
@@ -52,10 +94,21 @@ xelatex -interaction=nonstopmode temp.tex
 
 ## 转换为 Word
 
-在仓库根目录运行：
+推荐直接运行根目录快捷脚本：
 
 ```powershell
-.\scripts\tex-to-docx.ps1 -InputFile temp.tex -OutputFile temp-crossref.docx -Bibliography temp-ref.bib -Csl temp-ref.csl
+.\convert-docx.ps1
+```
+
+生成结果为 `temp.docx`。该脚本等价于调用：
+
+```powershell
+.\scripts\tex-to-docx.ps1 `
+    -InputFile temp.tex `
+    -OutputFile temp.docx `
+    -Bibliography reference.bib `
+    -Csl gbt7714.csl `
+    -ReferenceDoc reference.docx
 ```
 
 脚本会自动完成这些步骤：
@@ -63,14 +116,15 @@ xelatex -interaction=nonstopmode temp.tex
 - 将 LaTeX 中引用的 PDF 图片转换为 Pandoc 更容易写入 Word 的 PNG 图片。
 - 调用 Pandoc 和 Lua filter 生成 DOCX。
 - 为 Word 表格补充三线表边框和表格段落样式，并自动居中、按内容调整表格宽度。
+- 规范化 Word 文档中的项目样式 ID，使其使用 `Lpt...` 前缀。
 
-如果需要使用自定义 Word 样式模板，可以加上 `-ReferenceDoc`：
+如果需要自定义输入、输出或样式模板，可以直接调用 `scripts/tex-to-docx.ps1` 并传入参数。
 
-```powershell
-.\scripts\tex-to-docx.ps1 -InputFile temp.tex -OutputFile temp-crossref.docx -Bibliography temp-ref.bib -Csl temp-ref.csl -ReferenceDoc reference.docx
-```
+## Word 样式模板
 
-`reference.docx` 中的项目样式 ID 使用 `Lpt...` 前缀，例如 `LptHeading1`、`LptBodyText`、`LptTableCaption` 和 `LptReferenceItem`，以避免和 Word/Pandoc 内置样式 ID 重复。替换或重新生成 `reference.docx` 后，可以运行：
+`reference.docx` 中的项目样式 ID 使用 `Lpt...` 前缀，例如 `LptHeading1`、`LptBodyText`、`LptTableCaption` 和 `LptReferenceItem`，以避免和 Word/Pandoc 内置样式 ID 重复。
+
+替换或重新生成 `reference.docx` 后，可以运行：
 
 ```powershell
 uv run python .\scripts\namespace-reference-docx-styles.py reference.docx

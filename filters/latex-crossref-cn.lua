@@ -121,17 +121,22 @@ local function meta_inlines(meta_value)
   return text ~= "" and { pandoc.Str(text) } or {}
 end
 
+local function author_separator()
+  -- Pandoc's DOCX writer collapses ordinary CJK-adjacent spaces. NBSP keeps
+  -- the visual author gap stable in Word.
+  return pandoc.Str(string.rep("\194\160", 4))
+end
+
 local function author_inlines(author_meta)
   if not author_meta then
     return {}
   end
 
-  if author_meta.t == "MetaList" then
+  if author_meta.t == "MetaList" or pandoc.utils.type(author_meta) == "List" then
     local result = {}
     for i, author in ipairs(author_meta) do
       if i > 1 then
-        table.insert(result, pandoc.Str(";"))
-        table.insert(result, pandoc.Space())
+        table.insert(result, author_separator())
       end
       for _, inline in ipairs(meta_inlines(author)) do
         table.insert(result, inline)
@@ -141,6 +146,275 @@ local function author_inlines(author_meta)
   end
 
   return meta_inlines(author_meta)
+end
+
+local function utf8_chars(text)
+  local chars = {}
+  local positions = {}
+
+  for pos, codepoint in utf8.codes(text) do
+    table.insert(positions, { pos = pos, codepoint = codepoint })
+  end
+
+  for i, item in ipairs(positions) do
+    local next_pos = positions[i + 1] and positions[i + 1].pos or (#text + 1)
+    table.insert(chars, {
+      text = text:sub(item.pos, next_pos - 1),
+      codepoint = item.codepoint
+    })
+  end
+
+  return chars
+end
+
+local function is_spacing_codepoint(codepoint)
+  return codepoint == 0x20 or codepoint == 0xA0
+end
+
+local function is_cjk_codepoint(codepoint)
+  return
+    (codepoint >= 0x3000 and codepoint <= 0x303F) or
+    (codepoint >= 0x3400 and codepoint <= 0x4DBF) or
+    (codepoint >= 0x4E00 and codepoint <= 0x9FFF) or
+    (codepoint >= 0xF900 and codepoint <= 0xFAFF) or
+    (codepoint >= 0xFF00 and codepoint <= 0xFFEF) or
+    (codepoint >= 0x20000 and codepoint <= 0x2FA1F)
+end
+
+local function is_ascii_token_codepoint(codepoint)
+  return codepoint > 0x20 and codepoint < 0x7F
+end
+
+local function boundary_kind_for_codepoint(codepoint)
+  if is_cjk_codepoint(codepoint) then
+    return "cjk"
+  end
+  if is_ascii_token_codepoint(codepoint) then
+    return "ascii"
+  end
+  return nil
+end
+
+local function should_close_spacing(left_kind, right_kind)
+  return
+    (left_kind == "cjk" and right_kind == "ascii") or
+    (left_kind == "ascii" and right_kind == "cjk")
+end
+
+local function first_text_boundary_kind(text)
+  for _, char in ipairs(utf8_chars(text)) do
+    if not is_spacing_codepoint(char.codepoint) then
+      local kind = boundary_kind_for_codepoint(char.codepoint)
+      if kind then
+        return kind
+      end
+    end
+  end
+  return nil
+end
+
+local function last_text_boundary_kind(text)
+  local chars = utf8_chars(text)
+
+  for i = #chars, 1, -1 do
+    local char = chars[i]
+    if not is_spacing_codepoint(char.codepoint) then
+      local kind = boundary_kind_for_codepoint(char.codepoint)
+      if kind then
+        return kind
+      end
+    end
+  end
+  return nil
+end
+
+local function normalize_cjk_text_spacing(text)
+  local chars = utf8_chars(text)
+  local kept = {}
+
+  for i, char in ipairs(chars) do
+    if is_spacing_codepoint(char.codepoint) then
+      local left_kind = nil
+      local right_kind = nil
+
+      for j = i - 1, 1, -1 do
+        if not is_spacing_codepoint(chars[j].codepoint) then
+          left_kind = boundary_kind_for_codepoint(chars[j].codepoint)
+          break
+        end
+      end
+
+      for j = i + 1, #chars do
+        if not is_spacing_codepoint(chars[j].codepoint) then
+          right_kind = boundary_kind_for_codepoint(chars[j].codepoint)
+          break
+        end
+      end
+
+      if not should_close_spacing(left_kind, right_kind) then
+        table.insert(kept, char.text)
+      end
+    else
+      table.insert(kept, char.text)
+    end
+  end
+
+  return table.concat(kept)
+end
+
+local function strip_leading_spacing(text)
+  local chars = utf8_chars(text)
+  local first_kept = 1
+
+  while chars[first_kept] and is_spacing_codepoint(chars[first_kept].codepoint) do
+    first_kept = first_kept + 1
+  end
+
+  local kept = {}
+  for i = first_kept, #chars do
+    table.insert(kept, chars[i].text)
+  end
+  return table.concat(kept)
+end
+
+local function strip_trailing_spacing(text)
+  local chars = utf8_chars(text)
+  local last_kept = #chars
+
+  while chars[last_kept] and is_spacing_codepoint(chars[last_kept].codepoint) do
+    last_kept = last_kept - 1
+  end
+
+  local kept = {}
+  for i = 1, last_kept do
+    table.insert(kept, chars[i].text)
+  end
+  return table.concat(kept)
+end
+
+local function inline_boundary_kind(inline, side)
+  if inline.t == "Str" then
+    if side == "first" then
+      return first_text_boundary_kind(inline.text)
+    end
+    return last_text_boundary_kind(inline.text)
+  end
+
+  if inline.t == "Math" or inline.t == "Code" then
+    return "ascii"
+  end
+
+  local text = pandoc.utils.stringify(inline)
+  if side == "first" then
+    return first_text_boundary_kind(text)
+  end
+  return last_text_boundary_kind(text)
+end
+
+local function is_spacing_inline(inline)
+  if inline.t == "Space" then
+    return true
+  end
+
+  if inline.t ~= "Str" then
+    return false
+  end
+
+  local chars = utf8_chars(inline.text)
+  if #chars == 0 then
+    return false
+  end
+
+  for _, char in ipairs(chars) do
+    if not is_spacing_codepoint(char.codepoint) then
+      return false
+    end
+  end
+
+  return true
+end
+
+local function adjacent_boundary_kind(inlines, index, step)
+  local side = step > 0 and "first" or "last"
+  local i = index + step
+
+  while inlines[i] do
+    local kind = inline_boundary_kind(inlines[i], side)
+    if kind then
+      return kind
+    end
+    i = i + step
+  end
+
+  return nil
+end
+
+local function trim_str_inline_boundary_spacing(inlines)
+  for i, inline in ipairs(inlines) do
+    if inline.t == "Str" then
+      local first_kind = first_text_boundary_kind(inline.text)
+      local last_kind = last_text_boundary_kind(inline.text)
+      local prev_kind = adjacent_boundary_kind(inlines, i, -1)
+      local next_kind = adjacent_boundary_kind(inlines, i, 1)
+
+      if should_close_spacing(prev_kind, first_kind) then
+        inline.text = strip_leading_spacing(inline.text)
+      end
+      if should_close_spacing(last_kind, next_kind) then
+        inline.text = strip_trailing_spacing(inline.text)
+      end
+    end
+  end
+
+  return inlines
+end
+
+local function normalize_cjk_spacing(inlines)
+  local normalized = {}
+
+  for _, inline in ipairs(inlines) do
+    if inline.t == "Str" then
+      inline.text = normalize_cjk_text_spacing(inline.text)
+      if inline.text ~= "" then
+        table.insert(normalized, inline)
+      end
+    else
+      table.insert(normalized, inline)
+    end
+  end
+
+  normalized = trim_str_inline_boundary_spacing(normalized)
+
+  local result = {}
+
+  for i, inline in ipairs(normalized) do
+    if is_spacing_inline(inline) then
+      local left_kind = adjacent_boundary_kind(normalized, i, -1)
+      local right_kind = adjacent_boundary_kind(normalized, i, 1)
+
+      if not should_close_spacing(left_kind, right_kind) then
+        table.insert(result, inline)
+      end
+    else
+      table.insert(result, inline)
+    end
+  end
+
+  return result
+end
+
+local function normalize_blocks_spacing(blocks)
+  local normalized = {}
+
+  for _, block in ipairs(blocks) do
+    if block.t == "Div" and has_custom_style(block) == styles.author then
+      table.insert(normalized, block)
+    else
+      table.insert(normalized, block:walk({ Inlines = normalize_cjk_spacing }))
+    end
+  end
+
+  return normalized
 end
 
 local function is_keywords_para(block)
@@ -456,5 +730,7 @@ function Pandoc(doc)
     doc.meta.date = nil
     doc.meta.abstract = nil
   end
-  return doc:walk({ Link = replace_ref_link })
+  doc = doc:walk({ Link = replace_ref_link })
+  doc.blocks = normalize_blocks_spacing(doc.blocks)
+  return doc
 end

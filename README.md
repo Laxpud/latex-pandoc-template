@@ -30,8 +30,10 @@ uv sync
 - `temp-ref.bib`：BibTeX 参考文献数据库。
 - `temp-ref.bst`：LaTeX 编译 PDF 时使用的参考文献样式。
 - `temp-ref.csl`：Pandoc 转 Word 时使用的参考文献样式。
+- `reference.docx`：Pandoc 转 Word 时使用的 Word 样式模板。
 - `fig/`：正文图片目录。
 - `scripts/tex-to-docx.ps1`：将 LaTeX 手稿转换为 Word 的主脚本。
+- `scripts/namespace-reference-docx-styles.py`：将 Word 样式模板中的项目样式 ID 规范化为 `Lpt...` 前缀，避免和 Word/Pandoc 内置样式冲突。
 - `filters/latex-crossref-cn.lua`：Pandoc Lua filter，用于处理中文图表题、公式编号、交叉引用和 Word 段落样式。
 - `.pandoc-cache/`：转换 Word 时生成的临时文件目录，会被 Git 忽略。
 
@@ -66,6 +68,12 @@ xelatex -interaction=nonstopmode temp.tex
 
 ```powershell
 .\scripts\tex-to-docx.ps1 -InputFile temp.tex -OutputFile temp-crossref.docx -Bibliography temp-ref.bib -Csl temp-ref.csl -ReferenceDoc reference.docx
+```
+
+`reference.docx` 中的项目样式 ID 使用 `Lpt...` 前缀，例如 `LptHeading1`、`LptBodyText`、`LptTableCaption` 和 `LptReferenceItem`，以避免和 Word/Pandoc 内置样式 ID 重复。替换或重新生成 `reference.docx` 后，可以运行：
+
+```powershell
+uv run python .\scripts\namespace-reference-docx-styles.py reference.docx
 ```
 
 ## 写作建议

@@ -1,8 +1,8 @@
 param(
     [Parameter(Mandatory = $true)]
     [string]$DocxFile,
-    [string]$HeaderStyle = "TableHeader",
-    [string]$BodyStyle = "TableBody"
+    [string]$HeaderStyle = "LptTableHeader",
+    [string]$BodyStyle = "LptTableBody"
 )
 
 $ErrorActionPreference = "Stop"

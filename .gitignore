@@ -30,6 +30,7 @@
 # Generated documents
 *.docx
 *.pdf
+!reference.docx
 !fig/
 !fig/*.pdf
 !fig/**/*.pdf

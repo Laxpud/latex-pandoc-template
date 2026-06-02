@@ -4,19 +4,22 @@
 local refs = {}
 local counters = { fig = 0, tab = 0, eq = 0 }
 local styles = {
-  title = "PaperTitle",
-  author = "AuthorBlock",
-  date = "PaperDate",
-  abstract = "Abstract",
-  keywords = "Keywords",
-  body = "BodyText",
-  figure_caption = "FigureCaption",
-  table_caption = "TableCaption",
-  equation = "EquationNumbered",
-  references_heading = "ReferencesHeading",
-  reference_item = "ReferenceItem",
-  table_header = "TableHeader",
-  table_body = "TableBody"
+  title = "LptPaperTitle",
+  author = "LptAuthorBlock",
+  date = "LptPaperDate",
+  abstract = "LptAbstract",
+  keywords = "LptKeywords",
+  heading1 = "LptHeading1",
+  heading2 = "LptHeading2",
+  heading3 = "LptHeading3",
+  body = "LptBodyText",
+  figure_caption = "LptFigureCaption",
+  table_caption = "LptTableCaption",
+  equation = "LptEquationNumbered",
+  references_heading = "LptReferencesHeading",
+  reference_item = "LptReferenceItem",
+  table_header = "LptTableHeader",
+  table_body = "LptTableBody"
 }
 
 local function stringify(inlines)
@@ -66,6 +69,21 @@ local function style_prefixed_plain_or_para(block, prefix, style_name)
   end
 
   return styled_div({ block }, style_name)
+end
+
+local function style_header(block)
+  local style_name = styles["heading" .. tostring(block.level)]
+  if not style_name then
+    return block
+  end
+
+  return styled_div(
+    { pandoc.Para(block.content) },
+    style_name,
+    block.identifier,
+    block.classes,
+    block.attributes
+  )
 end
 
 local function meta_blocks(meta_value)
@@ -399,6 +417,8 @@ local function rewrite_blocks(blocks)
       table.insert(rewritten, style_references(block))
     elseif block.t == "Table" and block.identifier and block.identifier:match("^tab:") then
       table.insert(rewritten, number_table(block, block.identifier))
+    elseif block.t == "Header" then
+      table.insert(rewritten, style_header(block))
     elseif block.t == "Para" and #block.content == 1 and block.content[1].t == "Math" then
       local math = block.content[1]
       if math.mathtype == "DisplayMath" then

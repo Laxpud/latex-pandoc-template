@@ -14,6 +14,12 @@ from xml.etree import ElementTree as ET
 WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 STYLE_ID = f"{{{WORD_NS}}}styleId"
 VAL = f"{{{WORD_NS}}}val"
+ABSTRACT_NUM_ID = f"{{{WORD_NS}}}abstractNumId"
+NUM_ID = f"{{{WORD_NS}}}numId"
+ILVL = f"{{{WORD_NS}}}ilvl"
+POS = f"{{{WORD_NS}}}pos"
+LEFT = f"{{{WORD_NS}}}left"
+HANGING = f"{{{WORD_NS}}}hanging"
 
 STYLE_ID_MAP = {
     "PaperTitle": "LptPaperTitle",
@@ -35,6 +41,13 @@ STYLE_ID_MAP = {
 }
 INVERSE_STYLE_ID_MAP = {value: key for key, value in STYLE_ID_MAP.items()}
 PROJECT_STYLE_IDS = set(STYLE_ID_MAP.values())
+HEADING_NUMBERING_ABSTRACT_NUM_ID = "99"
+HEADING_NUMBERING_NUM_ID = "99"
+HEADING_NUMBERING_LEVELS = (
+    ("0", "LptHeading1", "%1", "360"),
+    ("1", "LptHeading2", "%1.%2", "540"),
+    ("2", "LptHeading3", "%1.%2.%3", "720"),
+)
 
 ET.register_namespace("w", WORD_NS)
 
@@ -68,6 +81,142 @@ def ensure_child(element: ET.Element, local_name_value: str) -> ET.Element:
     insert_index = 1 if len(element) > 0 and local_name(element[0]) == "name" else 0
     element.insert(insert_index, child)
     return child
+
+
+def qn(local_name_value: str) -> str:
+    return f"{{{WORD_NS}}}{local_name_value}"
+
+
+def set_attr(element: ET.Element, attr_name: str, value: str) -> int:
+    if element.get(attr_name) == value:
+        return 0
+    element.set(attr_name, value)
+    return 1
+
+
+def remove_children(element: ET.Element, local_name_value: str) -> int:
+    removed = 0
+    for child in list(element):
+        if local_name(child) == local_name_value:
+            element.remove(child)
+            removed += 1
+    return removed
+
+
+def ensure_style_child(style: ET.Element, local_name_value: str) -> ET.Element:
+    child = style.find(qn(local_name_value))
+    if child is not None:
+        return child
+
+    child = ET.Element(qn(local_name_value))
+    if local_name_value == "pPr":
+        for index, existing_child in enumerate(style):
+            if local_name(existing_child) == "rPr":
+                style.insert(index, child)
+                return child
+    style.append(child)
+    return child
+
+
+def set_child_val(parent: ET.Element, local_name_value: str, value: str) -> int:
+    child = parent.find(qn(local_name_value))
+    if child is None:
+        child = ET.SubElement(parent, qn(local_name_value))
+    return set_attr(child, VAL, value)
+
+
+def ensure_heading_style_numbering(root: ET.Element) -> int:
+    changed = 0
+
+    for level, style_id, _, _ in HEADING_NUMBERING_LEVELS:
+        style = root.find(f"{qn('style')}[@{STYLE_ID}='{style_id}']")
+        if style is None:
+            continue
+
+        ppr = ensure_style_child(style, "pPr")
+        num_pr = ppr.find(qn("numPr"))
+        if num_pr is None:
+            num_pr = ET.SubElement(ppr, qn("numPr"))
+            changed += 1
+        changed += set_child_val(num_pr, "ilvl", level)
+        changed += set_child_val(num_pr, "numId", HEADING_NUMBERING_NUM_ID)
+
+    return changed
+
+
+def create_heading_level(
+    level: str,
+    style_id: str,
+    level_text: str,
+    left: str,
+) -> ET.Element:
+    lvl = ET.Element(qn("lvl"), {ILVL: level})
+    ET.SubElement(lvl, qn("start"), {VAL: "1"})
+    ET.SubElement(lvl, qn("numFmt"), {VAL: "decimal"})
+    ET.SubElement(lvl, qn("pStyle"), {VAL: style_id})
+    ET.SubElement(lvl, qn("lvlText"), {VAL: level_text})
+    ET.SubElement(lvl, qn("lvlJc"), {VAL: "left"})
+
+    ppr = ET.SubElement(lvl, qn("pPr"))
+    tabs = ET.SubElement(ppr, qn("tabs"))
+    ET.SubElement(tabs, qn("tab"), {VAL: "num", POS: left})
+    ET.SubElement(ppr, qn("ind"), {LEFT: left, HANGING: "360"})
+    return lvl
+
+
+def find_child_by_attr(
+    root: ET.Element,
+    local_name_value: str,
+    attr_name: str,
+    attr_value: str,
+) -> ET.Element | None:
+    for child in root.findall(qn(local_name_value)):
+        if child.get(attr_name) == attr_value:
+            return child
+    return None
+
+
+def ensure_heading_numbering(root: ET.Element) -> int:
+    changed = 0
+
+    abstract_num = find_child_by_attr(
+        root,
+        "abstractNum",
+        ABSTRACT_NUM_ID,
+        HEADING_NUMBERING_ABSTRACT_NUM_ID,
+    )
+    if abstract_num is None:
+        abstract_num = ET.Element(
+            qn("abstractNum"),
+            {ABSTRACT_NUM_ID: HEADING_NUMBERING_ABSTRACT_NUM_ID},
+        )
+        root.append(abstract_num)
+        changed += 1
+    else:
+        changed += remove_children(abstract_num, "multiLevelType")
+        changed += remove_children(abstract_num, "lvl")
+
+    ET.SubElement(abstract_num, qn("multiLevelType"), {VAL: "multilevel"})
+    changed += 1
+    for level, style_id, level_text, left in HEADING_NUMBERING_LEVELS:
+        abstract_num.append(create_heading_level(level, style_id, level_text, left))
+        changed += 1
+
+    num = find_child_by_attr(root, "num", NUM_ID, HEADING_NUMBERING_NUM_ID)
+    if num is None:
+        num = ET.Element(qn("num"), {NUM_ID: HEADING_NUMBERING_NUM_ID})
+        root.append(num)
+        changed += 1
+    else:
+        changed += remove_children(num, "abstractNumId")
+
+    ET.SubElement(
+        num,
+        qn("abstractNumId"),
+        {VAL: HEADING_NUMBERING_ABSTRACT_NUM_ID},
+    )
+    changed += 1
+    return changed
 
 
 def is_project_style(style: ET.Element, style_id: str) -> bool:
@@ -182,6 +331,7 @@ def rewrite_styles_xml(root: ET.Element) -> int:
 
         changed += rewrite_style_refs_in_project_style(style)
 
+    changed += ensure_heading_style_numbering(root)
     return changed
 
 
@@ -200,12 +350,14 @@ def rewrite_document_style_refs(root: ET.Element) -> int:
     return changed
 
 
-def rewrite_xml(xml_bytes: bytes, is_styles_xml: bool) -> tuple[bytes, int]:
+def rewrite_xml(xml_bytes: bytes, part_name: str) -> tuple[bytes, int]:
     root = ET.fromstring(xml_bytes)
-    if is_styles_xml:
+    if part_name == "word/styles.xml":
         changed = rewrite_styles_xml(root)
     else:
         changed = rewrite_document_style_refs(root)
+        if part_name == "word/numbering.xml":
+            changed += ensure_heading_numbering(root)
 
     if changed == 0:
         return xml_bytes, 0
@@ -231,7 +383,7 @@ def namespace_docx_styles(input_docx: Path, output_docx: Path) -> int:
                     if should_rewrite_xml_part(item.filename):
                         data, changed = rewrite_xml(
                             data,
-                            is_styles_xml=item.filename == "word/styles.xml",
+                            part_name=item.filename,
                         )
                         total_changed += changed
                     target.writestr(item, data)

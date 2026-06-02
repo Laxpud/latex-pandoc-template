@@ -76,6 +76,8 @@ xelatex -interaction=nonstopmode temp.tex
 uv run python .\scripts\namespace-reference-docx-styles.py reference.docx
 ```
 
+调整标题格式时，不要在 `reference.docx` 正文里手动输入 `1`、`1.1` 这类编号；标题编号需要通过 Word 多级列表绑定到 `LptHeading1`、`LptHeading2` 和 `LptHeading3` 样式。上面的脚本会自动修复这三个标题样式的多级编号关系。
+
 ## 写作建议
 
 - 标题、作者、摘要和关键词保留在正文开头。

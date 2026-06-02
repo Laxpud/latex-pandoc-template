@@ -47,7 +47,7 @@
 
 论文初稿通常更重视内容结构和审阅便利性，而不是期刊最终排版。为了便于转换为 Word，建议手稿中优先使用标准 LaTeX 命令，例如章节命令、图表环境、公式环境和普通引用命令。
 
-本文的结构如下：第~\ref{sec:method} 节介绍基本写法，第~\ref{sec:results} 节给出图表和公式示例，第~\ref{sec:conclusion} 节总结使用建议。旋转机械噪声理论可参考期刊论文~\cite{ffowcswilliams1969theory}，倾转翼 eVTOL 噪声分析可参考会议论文~\cite{higgins2020aeroacoustic}，旋翼空气动力学基础可参考专著和书中章节~\cite{Johnson80a,Leishman00}。
+本文的结构如下：第~\ref{sec:method} 节介绍基本写法，第~\ref{sec:results} 节给出图表和公式示例，第~\ref{sec:conclusion} 节总结使用建议。
 
 \section{方法}
 \label{sec:method}
@@ -80,16 +80,9 @@
 \subsection{图片示例}
 \label{subsec:figure}
 
-图~\ref{fig:sample} 展示了一个普通图片环境。为了便于 Pandoc 识别，建议每个图片只保留一个 \verb|\caption|，不要使用双语图题计数器回退等复杂写法。
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.65\linewidth]{cover-kqdlxxb.jpg}
-  \caption{图片示例：期刊封面占位图}
-  \label{fig:sample}
-\end{figure}
-
-图~\ref{fig:vector-format-test-pdf} 和图~\ref{fig:vector-format-test-png} 分别插入同一图片的 PDF 和 PNG 格式，用于检查 LaTeX 编译和 Pandoc 转 Word 时不同图片格式的兼容性。
+图~\ref{fig:vector-format-test-pdf} 和图~\ref{fig:vector-format-test-png} 展示了普通图片环境，它们分别插入同一图片的 PDF 和 PNG 格式，用于检查 LaTeX 编译和 Pandoc 转 Word 时不同图片格式的兼容性。
+为了便于 Pandoc 识别，建议每个图片只保留一个 \verb|\caption|，不要使用双语图题计数器回退等复杂写法。
+注意，Word不支持PDF格式的图片，因此脚本在处理时先将pdf导出成了PNG格式。
 
 \begin{figure}[htbp]
   \centering
@@ -128,16 +121,16 @@
 \subsection{综合引用示例}
 \label{subsec:cross-reference}
 
-在讨论中可以同时引用多个对象。例如，第~\ref{subsec:equation} 节定义了模型，式~\ref{eq:sample} 给出了数学表达，图~\ref{fig:sample} 和表~\ref{tab:sample} 分别展示了图片和表格的写法。关于旋翼系统分析，还可参考技术报告~\cite{Straub84}、论文集章节~\cite{Friedmann93}、早期会议论文~\cite{Sadler}、普通网络或未出版资料~\cite{Patashnik}，以及在线资料~\cite{Roy:compworld2023}。
+在讨论中可以同时引用多个对象。例如，第~\ref{subsec:equation} 节定义了模型，式~\ref{eq:sample} 给出了数学表达，图~\ref{fig:vector-format-test-pdf}、图~\ref{fig:vector-format-test-png} 和表~\ref{tab:sample} 分别展示了图片和表格的写法。
+本模板的参考文献文件覆盖了多种 BibTeX 条目类型，包括期刊论文~\cite{nightcity2077chipSideChannel,wang2047flyingBlade}、档案资料~\cite{天庭巡查司648六根封存}、专著~\cite{logan1023firstFlame}、小册子~\cite{htt2010teaTimeRules}、文集~\cite{senshi514dungeonFoodSystems}、会议论文~\cite{二郎642六根分配,bridges2039timefallRouting}、数据库~\cite{ofnir1320landsBetweenDatabase}、数据集~\cite{heroAssociation2021disasterDataset}、电子资料~\cite{alvarez2076braindanceArtifacts}、书中章节~\cite{tu550moonEngineChapter}、论文集章节~\cite{frieren1045memoryMagic}、手册~\cite{sculptor1579prostheticManual}、地图~\cite{senshi514goldenCountryMap}、学位论文~\cite{gotoh2023stageNoise,sellen1214primevalCurrent}、普通资料~\cite{rubicon621jobFragments}、专题著作~\cite{moretti1349divinationRisk}、报纸文章~\cite{usagiyama2014steamerFault}、在线资料~\cite{nakano2011keionGear}、专利~\cite{gustav1192priorArtTranslation}、连续出版物~\cite{toyohashi2024makeineSpecial}、会议录~\cite{ranni1321leyndellSymposium}、软件~\cite{allmind621arenaBench}、标准~\cite{centrebrain4870dysonInterface}、技术报告~\cite{ueg2058heavyFusionScaleup}，以及未出版资料~\cite{gotoh2023emergencyStickyNote}；在 Pandoc 转 Word 时，这些引用可以通过同一个 BibTeX 数据库统一管理。
 
 \section{结论}
 \label{sec:conclusion}
 
 本文示例保留了论文手稿的核心语义元素，同时删除了期刊模板中的页眉页脚、双栏、字体、复杂标题页和专用参考文献宏。这样的写法更适合作为 Pandoc 转 Word 审阅稿的源文件。
 
-本模板的参考文献文件基本覆盖了一篇论文中常见的文献类型，包括期刊论文~\cite{ffowcswilliams1969theory}、会议论文~\cite{higgins2020aeroacoustic,Sadler}、技术报告~\cite{Straub84}、专著~\cite{Johnson80a}、书中章节~\cite{Leishman00}、论文集章节~\cite{Friedmann93}、普通未出版或网络资料~\cite{Patashnik}，以及在线资料~\cite{Roy:compworld2023}；在 Pandoc 转 Word 时，这些引用可以通过同一个 BibTeX 数据库统一管理。
 
-\bibliographystyle{temp-ref}
-\bibliography{temp-ref}
+\bibliographystyle{gbt7714}
+\bibliography{reference}
 
 \end{document}

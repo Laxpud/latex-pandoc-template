@@ -7,8 +7,8 @@ try {
     & ".\scripts\tex-to-docx.ps1" `
         -InputFile "temp.tex" `
         -OutputFile "temp.docx" `
-        -Bibliography "temp-ref.bib" `
-        -Csl "temp-ref.csl" `
+        -Bibliography "reference.bib" `
+        -Csl "gbt7714.csl" `
         -ReferenceDoc "reference.docx"
 }
 finally {

@@ -62,7 +62,7 @@ xelatex -interaction=nonstopmode temp.tex
 
 - 将 LaTeX 中引用的 PDF 图片转换为 Pandoc 更容易写入 Word 的 PNG 图片。
 - 调用 Pandoc 和 Lua filter 生成 DOCX。
-- 为 Word 表格补充三线表边框和表格段落样式。
+- 为 Word 表格补充三线表边框和表格段落样式，并自动居中、按内容调整表格宽度。
 
 如果需要使用自定义 Word 样式模板，可以加上 `-ReferenceDoc`：
 

@@ -131,6 +131,25 @@ try {
         }
     }
 
+    function Set-TableAutoFitAndCenter {
+        param(
+            [System.Xml.XmlElement]$Table,
+            [xml]$Document
+        )
+
+        $TblPr = Ensure-ChildElement -Parent $Table -LocalName "tblPr" -Document $Document -Prepend
+
+        $TblJc = Ensure-ChildElement -Parent $TblPr -LocalName "jc" -Document $Document
+        [void]$TblJc.SetAttribute("val", $script:WordNs, "center")
+
+        $TblW = Ensure-ChildElement -Parent $TblPr -LocalName "tblW" -Document $Document
+        [void]$TblW.SetAttribute("type", $script:WordNs, "auto")
+        [void]$TblW.SetAttribute("w", $script:WordNs, "0")
+
+        $TblLayout = Ensure-ChildElement -Parent $TblPr -LocalName "tblLayout" -Document $Document
+        [void]$TblLayout.SetAttribute("type", $script:WordNs, "autofit")
+    }
+
     function Set-ParagraphStyle {
         param(
             [System.Xml.XmlElement]$Paragraph,
@@ -164,6 +183,7 @@ try {
 
     $Tables = $Xml.SelectNodes("//w:tbl", $Ns)
     foreach ($Table in $Tables) {
+        Set-TableAutoFitAndCenter -Table $Table -Document $Xml
         Set-ThreeLineTableBorders -Table $Table -Document $Xml
 
         $Rows = $Table.SelectNodes("./w:tr", $Ns)

@@ -9,6 +9,16 @@
 
 \graphicspath{{fig/}{refference/fig/}}
 
+\newenvironment{frontmatterblock}
+  {\begin{quotation}\small}
+  {\end{quotation}}
+
+\AtBeginDocument{%
+  \renewenvironment{abstract}
+    {\begin{frontmatterblock}\noindent\textbf{摘要：}}
+    {\end{frontmatterblock}}%
+}
+
 \title{适合 Pandoc 转 Word 的极简论文手稿示例}
 \author{张三\thanks{通信作者：zhangsan@example.com} \and 李四}
 \date{\today}
@@ -21,7 +31,12 @@
 本文给出一个极简 LaTeX 论文手稿示例，目标是在保留论文常用语义元素的同时，尽量避免复杂期刊排版命令，从而提高 Pandoc 转换为 Word 文档时的稳定性。模板包含标题、作者、摘要、关键词、章节层级、图表、公式、交叉引用和参考文献等常见内容。
 \end{abstract}
 
-\noindent\textbf{关键词：} Pandoc；LaTeX；Word；论文手稿；交叉引用
+\begingroup
+\small
+\setlength{\leftskip}{\leftmargini}
+\setlength{\rightskip}{\leftmargini}
+\noindent\textbf{关键词：} Pandoc；LaTeX；Word；论文手稿；交叉引用\par
+\endgroup
 
 \section{引言}
 \label{sec:introduction}

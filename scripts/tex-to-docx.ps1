@@ -15,8 +15,10 @@ $PandocCache = Join-Path $Root ".pandoc-cache"
 $PandocImageCache = Join-Path $PandocCache "images"
 $PandocInput = Join-Path $PandocCache "temp-pandoc.tex"
 $ImagePrepScript = Join-Path $PSScriptRoot "prepare-pandoc-images.py"
+$ReferenceDocRepairScript = Join-Path $PSScriptRoot "repair-reference-docx-styles.py"
 $ResourcePath = ".;fig;refference/fig;$PandocImageCache"
 
+Write-Host "Preparing images for Pandoc..."
 uv run python $ImagePrepScript `
     --input $InputFile `
     --output $PandocInput `
@@ -34,10 +36,22 @@ $PandocArgs = @(
 )
 
 if ($ReferenceDoc) {
-    $PandocArgs += "--reference-doc=$ReferenceDoc"
+    $ReferenceDocName = [System.IO.Path]::GetFileName($ReferenceDoc)
+    $PandocReferenceDoc = Join-Path $PandocCache "reference-$ReferenceDocName"
+
+    Write-Host "Checking reference docx styles..."
+    uv run python $ReferenceDocRepairScript `
+        --input $ReferenceDoc `
+        --output $PandocReferenceDoc
+
+    $PandocArgs += "--reference-doc=$PandocReferenceDoc"
 }
 
+Write-Host "Running Pandoc..."
 pandoc @PandocArgs
 
 $TableStyleScript = Join-Path $PSScriptRoot "apply-docx-table-styles.ps1"
+Write-Host "Applying Word table styles..."
 & $TableStyleScript -DocxFile $OutputFile
+
+Write-Host "Wrote $OutputFile"

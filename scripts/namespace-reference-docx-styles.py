@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Namespace this template's custom Word style IDs in a reference docx."""
+"""Normalize this template's custom Word style IDs in a docx."""
 
 from __future__ import annotations
 
@@ -196,6 +196,57 @@ def find_child_by_attr(
     return None
 
 
+def find_style_id_by_name(root: ET.Element, style_name: str) -> str | None:
+    for style in root.findall(qn("style")):
+        name = style.find(qn("name"))
+        if name is not None and name.get(VAL) == style_name:
+            return style.get(STYLE_ID)
+    return None
+
+
+def remove_duplicate_styles(root: ET.Element) -> int:
+    seen: set[str] = set()
+    changed = 0
+
+    for style in list(root.findall(qn("style"))):
+        style_id = style.get(STYLE_ID)
+        if not style_id:
+            continue
+        if style_id not in seen:
+            seen.add(style_id)
+            continue
+        root.remove(style)
+        changed += 1
+
+    return changed
+
+
+def normalize_body_text_style_refs(root: ET.Element) -> int:
+    style_ids = {
+        style.get(STYLE_ID)
+        for style in root.findall(qn("style"))
+        if style.get(STYLE_ID)
+    }
+    if "BodyText" in style_ids:
+        return 0
+
+    body_text_id = (
+        find_style_id_by_name(root, "Body Text")
+        or find_style_id_by_name(root, "Normal")
+    )
+    if not body_text_id:
+        return 0
+
+    changed = 0
+    for style in root.findall(qn("style")):
+        for ref_name in ("basedOn", "next"):
+            ref = style.find(qn(ref_name))
+            if ref is not None and ref.get(VAL) == "BodyText":
+                changed += set_attr(ref, VAL, body_text_id)
+
+    return changed
+
+
 def ensure_heading_numbering(root: ET.Element) -> int:
     changed = 0
 
@@ -328,7 +379,8 @@ def restore_builtin_style_refs(style: ET.Element) -> int:
 
 
 def rewrite_styles_xml(root: ET.Element) -> int:
-    changed = insert_project_heading_styles(root)
+    changed = remove_duplicate_styles(root)
+    changed += insert_project_heading_styles(root)
 
     for style in root.findall(f"{{{WORD_NS}}}style"):
         style_id = style.get(STYLE_ID)
@@ -352,6 +404,8 @@ def rewrite_styles_xml(root: ET.Element) -> int:
         changed += rewrite_style_refs_in_project_style(style)
 
     changed += ensure_heading_style_numbering(root)
+    changed += normalize_body_text_style_refs(root)
+    changed += remove_duplicate_styles(root)
     return changed
 
 

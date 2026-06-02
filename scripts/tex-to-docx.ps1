@@ -45,4 +45,8 @@ $TableStyleScript = Join-Path $PSScriptRoot "apply-docx-table-styles.ps1"
 Write-Host "Applying Word table styles..."
 & $TableStyleScript -DocxFile $OutputFile
 
+$StyleNormalizeScript = Join-Path $PSScriptRoot "namespace-reference-docx-styles.py"
+Write-Host "Normalizing Word styles..."
+uv run python $StyleNormalizeScript $OutputFile
+
 Write-Host "Wrote $OutputFile"

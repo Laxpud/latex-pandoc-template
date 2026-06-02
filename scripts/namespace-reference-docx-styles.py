@@ -125,6 +125,27 @@ def set_child_val(parent: ET.Element, local_name_value: str, value: str) -> int:
     return set_attr(child, VAL, value)
 
 
+def replace_child(parent: ET.Element, child: ET.Element, before_names: set[str]) -> int:
+    old_child = parent.find(child.tag)
+    if old_child is not None:
+        parent.remove(old_child)
+
+    for index, existing_child in enumerate(parent):
+        if local_name(existing_child) in before_names:
+            parent.insert(index, child)
+            return 1
+
+    parent.append(child)
+    return 1
+
+
+def heading_num_pr(level: str) -> ET.Element:
+    num_pr = ET.Element(qn("numPr"))
+    ET.SubElement(num_pr, qn("ilvl"), {VAL: level})
+    ET.SubElement(num_pr, qn("numId"), {VAL: HEADING_NUMBERING_NUM_ID})
+    return num_pr
+
+
 def ensure_heading_style_numbering(root: ET.Element) -> int:
     changed = 0
 
@@ -134,12 +155,11 @@ def ensure_heading_style_numbering(root: ET.Element) -> int:
             continue
 
         ppr = ensure_style_child(style, "pPr")
-        num_pr = ppr.find(qn("numPr"))
-        if num_pr is None:
-            num_pr = ET.SubElement(ppr, qn("numPr"))
-            changed += 1
-        changed += set_child_val(num_pr, "ilvl", level)
-        changed += set_child_val(num_pr, "numId", HEADING_NUMBERING_NUM_ID)
+        changed += replace_child(
+            ppr,
+            heading_num_pr(level),
+            before_names={"spacing", "ind", "outlineLvl", "rPr"},
+        )
 
     return changed
 

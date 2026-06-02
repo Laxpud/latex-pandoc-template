@@ -1,6 +1,12 @@
 # LaTeX Pandoc 论文手稿模板
 
+- 🌐 **[English README](doc/README.en.md)**：English guide for this template.
+- 🛠️ **[技术栈与实现说明](doc/technical-stack.md)**：文件职责、转换链路、脚本实现和维护说明。
+- 🤝 **[参与贡献](#参与贡献)**：报告问题、分享使用场景或一起改进模板。
+
 这是一个面向论文初稿写作的极简 LaTeX 模板。它保留标题、作者、摘要、关键词、章节、图表、公式、交叉引用和参考文献等常用论文结构，同时尽量减少复杂期刊排版命令，方便后续用 Pandoc 转成 Word 审阅稿。
+
+如果这个模板帮你少踩了一些 LaTeX 和 Word 转换的坑，欢迎给仓库点个 Star。也欢迎你提交问题、分享使用场景，或一起改进这个模板。
 
 ## 适合做什么
 
@@ -13,15 +19,16 @@
 
 最低需要安装以下工具：
 
-- TeX Live，并确保 `xelatex` 和 `bibtex` 可用。
-- Pandoc。
-- PowerShell。
-- uv，用来创建 Python 环境并运行图片预处理脚本。
+- TeX Live，并确保 `xelatex` 和 `bibtex` 可用。官方下载页面：[TeX Live](https://www.tug.org/texlive/acquire.html)。
+- Pandoc。官方下载页面：[Installing pandoc](https://pandoc.org/installing.html)。
+- PowerShell。Windows 通常自带 Windows PowerShell；如果需要安装新版 PowerShell 7，可参考：[Install PowerShell on Windows](https://learn.microsoft.com/en-us/powershell/scripting/install/install-powershell-on-windows)。
+- uv，用来创建 Python 环境并运行图片预处理脚本。官方下载页面：[Installing uv](https://docs.astral.sh/uv/getting-started/installation/)。
 
 可选编辑器环境：
 
-- VS Code。
-- LaTeX Workshop 扩展。
+- VS Code。官方下载页面：[Download Visual Studio Code](https://code.visualstudio.com/download)。
+- LaTeX Workshop 扩展。直接从 VS Code 内部扩展市场安装，官方扩展页面：[LaTeX Workshop](https://marketplace.visualstudio.com/items?itemName=James-Yu.latex-workshop)。
+- Git。如果你不想安装 Git，也可以直接从 GitHub 下载 ZIP。官方下载页面：[Git Downloads](https://git-scm.com/downloads/)。
 
 本仓库的 `.vscode/settings.json` 已经写好 LaTeX Workshop 配方：
 
@@ -29,12 +36,6 @@
 - `xelatex -> bibtex -> xelatex*2`：手动指定完整的参考文献编译流程。
 
 为了避免打开文件后自动反复编译，仓库中已将 `latex-workshop.latex.autoBuild.run` 设置为 `never`。需要编译时，可在 VS Code 命令面板中执行 `LaTeX Workshop: Build with recipe` 并选择对应配方。
-
-首次使用时，在仓库根目录运行：
-
-```powershell
-uv sync
-```
 
 当前本机已验证的主要环境：
 
@@ -48,10 +49,62 @@ uv sync
 
 ## 快速开始
 
-1. 编辑 `temp.tex`。
-2. 运行 `uv sync` 准备 Python 依赖。
-3. 编译 PDF，或在 VS Code 中选择 LaTeX Workshop 配方。
-4. 运行 `.\convert-docx.ps1` 转换 Word 审阅稿。
+下面从一个全新的本地目录开始说明。命令默认在 PowerShell 中运行。
+
+1. 获取项目文件。
+
+   如果已经安装 Git，推荐用 `git clone`：
+
+   ```powershell
+   git clone https://github.com/Laxpud/latex-pandoc-template.git
+   cd latex-pandoc-template
+   ```
+
+   如果没有安装 Git，也可以手动下载：
+
+   1. 打开项目页面：<https://github.com/Laxpud/latex-pandoc-template>。
+   2. 点击 `Code`。
+   3. 选择 `Download ZIP`。
+   4. 解压 ZIP 文件。
+   5. 在 PowerShell 中进入解压后的 `latex-pandoc-template` 文件夹。
+
+2. 用 VS Code 打开项目文件夹：
+
+   ```powershell
+   code .
+   ```
+
+   如果 `code` 命令不可用，也可以先打开 VS Code，再选择 `File -> Open Folder...`，打开刚刚 clone 下来的 `latex-pandoc-template` 文件夹。
+
+3. 在 VS Code 中安装或确认已安装 LaTeX Workshop 扩展。
+
+   本仓库已经提供 `.vscode/settings.json`，打开项目文件夹后，LaTeX Workshop 会自动读取里面的编译配方。
+
+4. 准备 Python 依赖：
+
+   ```powershell
+   uv sync
+   ```
+
+   这一步会创建 `.venv/`，并安装图片预处理脚本需要的 Python 依赖。
+
+5. 打开 `temp.tex`，先尝试编译 PDF。
+
+   在 VS Code 命令面板中执行 `LaTeX Workshop: Build with recipe`，选择 `latexmk` 或 `xelatex -> bibtex -> xelatex*2`。
+
+   编译成功后，会得到 `temp.pdf`。如果 VS Code 没有自动显示 PDF，可以在文件列表中手动打开 `temp.pdf`。
+
+6. 转换 Word 审阅稿：
+
+   ```powershell
+   .\convert-docx.ps1
+   ```
+
+   转换成功后，会得到 `temp.docx`。
+
+7. 开始替换示例内容。
+
+   优先改 `temp.tex`、`reference.bib` 和 `fig/`。建议先保持示例中的章节、图表、公式和参考文献结构，逐步替换为自己的论文内容。
 
 ## 第一次使用时主要改哪些文件
 
@@ -160,3 +213,14 @@ LaTeX 编译 PDF 时可以直接使用 PDF 矢量图。转 Word 时，`scripts/p
 - `.venv/`
 
 通常只需要提交源文件、脚本、过滤器、参考文献文件和 `fig/` 中需要保留的图片资源。
+
+## 参与贡献
+
+欢迎参与这个项目，尤其是下面这些方向：
+
+- 报告 LaTeX 编译或 Pandoc 转 Word 时遇到的问题。
+- 补充更清晰的新手使用说明。
+- 改进 Word 样式模板、图表格式或参考文献格式。
+- 分享不同论文写作场景下的兼容性问题和解决办法。
+
+如果你准备提交改动，建议先确认生成文件没有被一起提交；复杂改动可以在提交说明里用子条目写清楚主要变化。

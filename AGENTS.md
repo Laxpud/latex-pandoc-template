@@ -12,8 +12,9 @@
 
 ## 工作原则
 
-- 优先阅读现有文档和脚本，再决定改动。README 面向第一次使用者，`doc/technical-stack.md` 面向维护者。
+- 优先阅读现有文档和脚本，再决定改动。`README.md` 面向中文第一次使用者，`doc/README.en.md` 是英文入口，`doc/technical-stack.md` 面向维护者。
 - 保持 README 简洁，不把实现细节、完整文件清单或脚本内部逻辑堆到 README。
+- 修改中文 README 的用户入口内容时，尽量同步更新 `doc/README.en.md`；如果只改中文表达或暂不适合翻译，应在回复中说明。
 - 技术细节、文件职责、转换链路、排错说明优先放入 `doc/technical-stack.md`。
 - 改动应尽量小而集中。不要顺手重构无关脚本、改写示例论文内容或替换样式模板。
 - 遇到已有未提交改动时，默认认为是用户改的；不要回退、覆盖或清理与当前任务无关的文件。
@@ -28,6 +29,8 @@
 - Word 转换快捷入口：`.\convert-docx.ps1`
 - Word 转换主脚本：`.\scripts\tex-to-docx.ps1`
 - Pandoc Lua filter：`filters/latex-crossref-cn.lua`
+- 中文 README：`README.md`
+- 英文 README：`doc/README.en.md`
 - 技术文档：`doc/technical-stack.md`
 - VS Code 编译配方：`.vscode/settings.json`
 
@@ -100,10 +103,19 @@ README 应回答：
 
 - 这个模板适合做什么。
 - 第一次使用需要准备什么环境。
+- 如何通过 Git clone 或 GitHub ZIP 获取项目。
+- 如何在 VS Code 中打开项目文件夹。
 - 新手主要改哪些文件。
 - 新手暂时不用动哪些文件。
 - 如何编译 PDF 和转换 Word。
 - 去哪里看技术细节。
+- 如何参与贡献。
+
+`doc/README.en.md` 应作为英文版用户入口：
+
+- 与 README 的主要结构和使用流程保持同步。
+- 顶部应反向链接中文 README。
+- 面向英文读者时可以使用更自然的英文表达，不必逐句硬翻译。
 
 `doc/technical-stack.md` 应回答：
 

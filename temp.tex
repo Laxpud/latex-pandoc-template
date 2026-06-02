@@ -7,6 +7,9 @@
 \usepackage{graphicx}
 \usepackage[margin=2.54cm]{geometry}
 
+\providecommand{\doi}[1]{\textrm{\detokenize{#1}}}
+\providecommand{\V}[1]{\v{#1}}
+
 \graphicspath{{fig/}{refference/fig/}}
 
 \newenvironment{frontmatterblock}
@@ -18,6 +21,7 @@
     {\begin{frontmatterblock}\noindent\textbf{摘要：}}
     {\end{frontmatterblock}}%
 }
+
 
 \title{适合 Pandoc 转 Word 的极简论文手稿示例}
 \author{张三\thanks{通信作者：zhangsan@example.com} \and 李四}

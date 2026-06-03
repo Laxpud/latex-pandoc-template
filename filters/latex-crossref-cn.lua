@@ -665,9 +665,9 @@ local function equation_paragraph(math_text, number)
   return styled_div(
     {
       pandoc.Para({
-      pandoc.RawInline("openxml", "<w:tab/>"),
+      pandoc.RawInline("openxml", "<w:r><w:tab/></w:r>"),
       pandoc.Math("InlineMath", one_line_math),
-      pandoc.RawInline("openxml", "<w:tab/>"),
+      pandoc.RawInline("openxml", "<w:r><w:tab/></w:r>"),
       pandoc.Str("(" .. number .. ")")
       })
     },

@@ -23,7 +23,7 @@
 }
 
 
-\title{适合Pandoc转Word的极简论文手稿示例}
+\title{适合Pandoc转Word的极简论文手稿示例 Minimal Manuscript Example for Pandoc-to-Word Conversion}
 \author{张三\thanks{通信作者：zhangsan@example.com} \and 李四}
 \date{\today}
 
@@ -32,100 +32,100 @@
 \maketitle
 
 \begin{abstract}
-本文给出一个极简LaTeX论文手稿示例，目标是在保留论文常用语义元素的同时，尽量避免复杂期刊排版命令，从而提高Pandoc转换为Word文档时的稳定性。模板包含标题、作者、摘要、关键词、章节层级、图表、公式、交叉引用和参考文献等常见内容。
+本文给出一个极简LaTeX论文手稿示例，目标是在保留论文常用语义元素的同时，尽量避免复杂期刊排版命令，从而提高Pandoc转换为Word文档时的稳定性。模板包含标题、作者、摘要、关键词、章节层级、图表、公式、交叉引用和参考文献等常见内容。 This example provides a minimal LaTeX manuscript template. It keeps common semantic elements for academic writing while avoiding complex journal-specific layout commands, so that Pandoc can convert the manuscript to Word more reliably. The template includes the title, authors, abstract, keywords, section hierarchy, figures, tables, equations, cross references, and references.
 \end{abstract}
 
 \begingroup
 \small
 \setlength{\leftskip}{\leftmargini}
 \setlength{\rightskip}{\leftmargini}
-\noindent\textbf{关键词：} Pandoc；LaTeX；Word；论文手稿；交叉引用\par
+\noindent\textbf{关键词 Keywords：} Pandoc；LaTeX；Word；论文手稿 Manuscript；交叉引用 Cross references\par
 \endgroup
 
-\section{引言}
+\section{引言 Introduction}
 \label{sec:introduction}
 
-论文初稿通常更重视内容结构和审阅便利性，而不是期刊最终排版。为了便于转换为Word，建议手稿中优先使用标准LaTeX命令，例如章节命令、图表环境、公式环境和普通引用命令。
+论文初稿通常更重视内容结构和审阅便利性，而不是期刊最终排版。为了便于转换为Word，建议手稿中优先使用标准LaTeX命令，例如章节命令、图表环境、公式环境和普通引用命令。 A draft manuscript usually focuses on content structure and review convenience rather than final journal layout. To make Word conversion easier, the manuscript should prefer standard LaTeX commands, including section commands, figure and table environments, equation environments, and ordinary citation commands.
 
-本文的结构如下：第\ref{sec:method}节介绍基本写法，第\ref{sec:results}节给出图表和公式示例，第\ref{sec:conclusion}节总结使用建议。
+本文的结构如下：第\ref{sec:method}节介绍基本写法，第\ref{sec:results}节给出图表和公式示例，第\ref{sec:conclusion}节总结使用建议。 The structure of this manuscript is as follows: Section \ref{sec:method} introduces the basic writing pattern, Section \ref{sec:results} gives examples of figures, tables, and equations, and Section \ref{sec:conclusion} summarizes usage suggestions.
 
-\section{方法}
+\section{方法 Method}
 \label{sec:method}
 
-\subsection{手稿结构}
+\subsection{手稿结构 Manuscript Structure}
 \label{subsec:structure}
 
-手稿结构建议保持简单。标题、作者、摘要和关键词放在正文开头；正文使用\verb|\section|、\verb|\subsection|和\verb|\subsubsection|表示层级；图、表、公式使用标准浮动体和数学环境。
+手稿结构建议保持简单。标题、作者、摘要和关键词放在正文开头；正文使用\verb|\section|、\verb|\subsection|和\verb|\subsubsection|表示层级；图、表、公式使用标准浮动体和数学环境。 The manuscript structure should remain simple. The title, authors, abstract, and keywords are placed before the main text; the body uses \verb|\section|, \verb|\subsection|, and \verb|\subsubsection| to express hierarchy; figures, tables, and equations use standard floating and mathematical environments.
 
-\subsubsection{三级标题示例}
+\subsubsection{三级标题示例 Third-Level Heading Example}
 \label{subsubsec:third-level}
 
-三级标题可用于细分方法、实验条件或推导步骤。若后续需要投递期刊，可在定稿阶段再迁移到期刊模板，而不是在初稿阶段混入大量版式命令。
+三级标题可用于细分方法、实验条件或推导步骤。若后续需要投递期刊，可在定稿阶段再迁移到期刊模板，而不是在初稿阶段混入大量版式命令。 A third-level heading can be used to divide methods, experimental conditions, or derivation steps. If the manuscript later needs to be submitted to a journal, it can be migrated to the target journal template at the final stage instead of mixing many layout commands into the draft.
 
-\subsection{公式与引用}
+\subsection{公式与引用 Equations and Citations}
 \label{subsec:equation}
 
-公式建议使用标准\verb|equation|环境。式\ref{eq:sample}给出一个简单的线性模型：
+公式建议使用标准\verb|equation|环境。式\ref{eq:sample}给出一个简单的线性模型： Equations should use the standard \verb|equation| environment. Equation \ref{eq:sample} gives a simple linear model:
 
 \begin{equation}
   y = ax + b
   \label{eq:sample}
 \end{equation}
 
-其中，$x$为自变量，$y$为因变量，$a$和$b$分别为模型参数。正文中可以继续引用式\ref{eq:sample}，但不建议使用期刊模板专用的自定义引用命令。
+其中，$x$为自变量，$y$为因变量，$a$和$b$分别为模型参数。正文中可以继续引用式\ref{eq:sample}，但不建议使用期刊模板专用的自定义引用命令。 Here, $x$ is the independent variable, $y$ is the dependent variable, and $a$ and $b$ are model parameters. The body text can continue to cite Equation \ref{eq:sample}, but journal-template-specific custom reference commands are not recommended.
 
-\section{结果与讨论}
+\section{结果与讨论 Results and Discussion}
 \label{sec:results}
 
-\subsection{图片示例}
+\subsection{图片示例 Figure Examples}
 \label{subsec:figure}
 
-图\ref{fig:vector-format-test-pdf}和图\ref{fig:vector-format-test-png}展示了普通图片环境，它们分别插入同一图片的PDF和PNG格式，用于检查LaTeX编译和Pandoc转Word时不同图片格式的兼容性。为了便于Pandoc识别，建议每个图片只保留一个\verb|\caption|，不要使用双语图题计数器回退等复杂写法。注意，Word不支持PDF格式的图片，因此脚本在处理时先将pdf导出成了PNG格式。
+图\ref{fig:vector-format-test-pdf}和图\ref{fig:vector-format-test-png}展示了普通图片环境，它们分别插入同一图片的PDF和PNG格式，用于检查LaTeX编译和Pandoc转Word时不同图片格式的兼容性。为了便于Pandoc识别，建议每个图片只保留一个\verb|\caption|，不要使用双语图题计数器回退等复杂写法。注意，Word不支持PDF格式的图片，因此脚本在处理时先将pdf导出成了PNG格式。 Figure \ref{fig:vector-format-test-pdf} and Figure \ref{fig:vector-format-test-png} show ordinary figure environments. They insert the same image in PDF and PNG formats to check compatibility during LaTeX compilation and Pandoc-to-Word conversion. To help Pandoc recognize figures, each figure should keep only one \verb|\caption| and avoid complex patterns such as bilingual caption counter rollback. Note that Word does not support PDF images, so the script first exports PDF images to PNG during processing.
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.65\linewidth]{example-fig-1.pdf}
-  \caption{图片格式测试：PDF 矢量图}
+  \caption{图片格式测试：PDF 矢量图 Figure format test: PDF vector image}
   \label{fig:vector-format-test-pdf}
 \end{figure}
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.65\linewidth]{example-fig-2.png}
-  \caption{图片格式测试：PNG 位图}
+  \caption{图片格式测试：PNG 位图 Figure format test: PNG bitmap image}
   \label{fig:vector-format-test-png}
 \end{figure}
 
-\subsection{表格示例}
+\subsection{表格示例 Table Example}
 \label{subsec:table}
 
-表\ref{tab:sample}给出一个三线表。表格中可以使用\verb|booktabs|的\verb|\toprule|、\verb|\midrule|和\verb|\bottomrule|，这类结构通常比复杂合并单元格更利于转换。
+表\ref{tab:sample}给出一个三线表。表格中可以使用\verb|booktabs|的\verb|\toprule|、\verb|\midrule|和\verb|\bottomrule|，这类结构通常比复杂合并单元格更利于转换。 Table \ref{tab:sample} gives a three-line table. Tables can use the \verb|\toprule|, \verb|\midrule|, and \verb|\bottomrule| commands from \verb|booktabs|; this structure is usually easier to convert than complex merged cells.
 
 \begin{table}[htbp]
   \centering
-  \caption{表格示例：模型参数}
+  \caption{表格示例：模型参数 Table example: model parameters}
   \label{tab:sample}
   \begin{tabular}{lcc}
     \toprule
-    参数 & 数值 & 单位 \\
+    参数 Parameter & 数值 Value & 单位 Unit \\
     \midrule
-    斜率 $a$ & 1.20 & -- \\
-    截距 $b$ & 0.35 & -- \\
-    样本数 $n$ & 100 & -- \\
+    斜率 Slope $a$ & 1.20 & -- \\
+    截距 Intercept $b$ & 0.35 & -- \\
+    样本数 Sample size $n$ & 100 & -- \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-\subsection{综合引用示例}
+\subsection{综合引用示例 Combined Cross-Reference Example}
 \label{subsec:cross-reference}
 
-在讨论中可以同时引用多个对象。例如，第\ref{subsec:equation}节定义了模型，式\ref{eq:sample}给出了数学表达，图\ref{fig:vector-format-test-pdf}、图\ref{fig:vector-format-test-png}和表\ref{tab:sample}分别展示了图片和表格的写法。
-本模板的参考文献文件覆盖了多种BibTeX条目类型，包括期刊论文\cite{nightcity2077chipSideChannel,wang2047flyingBlade}、档案资料\cite{天庭巡查司648六根封存}、专著\cite{logan1023firstFlame}、小册子\cite{htt2010teaTimeRules}、文集\cite{senshi514dungeonFoodSystems}、会议论文\cite{二郎642六根分配,bridges2039timefallRouting}、数据库\cite{ofnir1320landsBetweenDatabase}、数据集\cite{heroAssociation2021disasterDataset}、电子资料\cite{alvarez2076braindanceArtifacts}、书中章节\cite{tu550moonEngineChapter}、论文集章节\cite{frieren1045memoryMagic}、手册\cite{sculptor1579prostheticManual}、地图\cite{senshi514goldenCountryMap}、学位论文\cite{gotoh2023stageNoise,sellen1214primevalCurrent}、普通资料\cite{rubicon621jobFragments}、专题著作\cite{moretti1349divinationRisk}、报纸文章\cite{usagiyama2014steamerFault}、在线资料\cite{nakano2011keionGear}、专利\cite{gustav1192priorArtTranslation}、连续出版物\cite{toyohashi2024makeineSpecial}、会议录\cite{ranni1321leyndellSymposium}、软件\cite{allmind621arenaBench}、标准\cite{centrebrain4870dysonInterface}、技术报告\cite{ueg2058heavyFusionScaleup}，以及未出版资料\cite{gotoh2023emergencyStickyNote}；在Pandoc转Word时，这些引用可以通过同一个BibTeX数据库统一管理。
+在讨论中可以同时引用多个对象。例如，第\ref{subsec:equation}节定义了模型，式\ref{eq:sample}给出了数学表达，图\ref{fig:vector-format-test-pdf}、图\ref{fig:vector-format-test-png}和表\ref{tab:sample}分别展示了图片和表格的写法。 Multiple objects can be cited together in the discussion. For example, Section \ref{subsec:equation} defines the model, Equation \ref{eq:sample} gives the mathematical expression, and Figure \ref{fig:vector-format-test-pdf}, Figure \ref{fig:vector-format-test-png}, and Table \ref{tab:sample} show the writing patterns for figures and tables.
+本模板的参考文献文件覆盖了多种BibTeX条目类型，包括期刊论文\cite{nightcity2077chipSideChannel,wang2047flyingBlade}、档案资料\cite{天庭巡查司648六根封存}、专著\cite{logan1023firstFlame}、小册子\cite{htt2010teaTimeRules}、文集\cite{senshi514dungeonFoodSystems}、会议论文\cite{二郎642六根分配,bridges2039timefallRouting}、数据库\cite{ofnir1320landsBetweenDatabase}、数据集\cite{heroAssociation2021disasterDataset}、电子资料\cite{alvarez2076braindanceArtifacts}、书中章节\cite{tu550moonEngineChapter}、论文集章节\cite{frieren1045memoryMagic}、手册\cite{sculptor1579prostheticManual}、地图\cite{senshi514goldenCountryMap}、学位论文\cite{gotoh2023stageNoise,sellen1214primevalCurrent}、普通资料\cite{rubicon621jobFragments}、专题著作\cite{moretti1349divinationRisk}、报纸文章\cite{usagiyama2014steamerFault}、在线资料\cite{nakano2011keionGear}、专利\cite{gustav1192priorArtTranslation}、连续出版物\cite{toyohashi2024makeineSpecial}、会议录\cite{ranni1321leyndellSymposium}、软件\cite{allmind621arenaBench}、标准\cite{centrebrain4870dysonInterface}、技术报告\cite{ueg2058heavyFusionScaleup}，以及未出版资料\cite{gotoh2023emergencyStickyNote}；在Pandoc转Word时，这些引用可以通过同一个BibTeX数据库统一管理。 The bibliography file in this template covers many BibTeX entry types, including journal articles \cite{nightcity2077chipSideChannel,wang2047flyingBlade}, archives \cite{天庭巡查司648六根封存}, books \cite{logan1023firstFlame}, booklets \cite{htt2010teaTimeRules}, collections \cite{senshi514dungeonFoodSystems}, conference papers \cite{二郎642六根分配,bridges2039timefallRouting}, databases \cite{ofnir1320landsBetweenDatabase}, datasets \cite{heroAssociation2021disasterDataset}, electronic resources \cite{alvarez2076braindanceArtifacts}, book chapters \cite{tu550moonEngineChapter}, proceedings chapters \cite{frieren1045memoryMagic}, manuals \cite{sculptor1579prostheticManual}, maps \cite{senshi514goldenCountryMap}, theses \cite{gotoh2023stageNoise,sellen1214primevalCurrent}, miscellaneous materials \cite{rubicon621jobFragments}, monographs \cite{moretti1349divinationRisk}, newspaper articles \cite{usagiyama2014steamerFault}, online resources \cite{nakano2011keionGear}, patents \cite{gustav1192priorArtTranslation}, serials \cite{toyohashi2024makeineSpecial}, proceedings \cite{ranni1321leyndellSymposium}, software \cite{allmind621arenaBench}, standards \cite{centrebrain4870dysonInterface}, technical reports \cite{ueg2058heavyFusionScaleup}, and unpublished materials \cite{gotoh2023emergencyStickyNote}. During Pandoc-to-Word conversion, these references can be managed through the same BibTeX database.
 
-\section{结论}
+\section{结论 Conclusion}
 \label{sec:conclusion}
 
-本文示例保留了论文手稿的核心语义元素，同时删除了期刊模板中的页眉页脚、双栏、字体、复杂标题页和专用参考文献宏。这样的写法更适合作为Pandoc转Word审阅稿的源文件。
+本文示例保留了论文手稿的核心语义元素，同时删除了期刊模板中的页眉页脚、双栏、字体、复杂标题页和专用参考文献宏。这样的写法更适合作为Pandoc转Word审阅稿的源文件。 This example keeps the core semantic elements of a manuscript while removing journal-template elements such as headers and footers, two-column layout, special fonts, complex title pages, and dedicated reference macros. This writing style is more suitable as the source file for a Pandoc-generated Word review draft.
 
 
 \bibliographystyle{gbt7714}

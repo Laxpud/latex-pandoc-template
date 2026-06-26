@@ -2,24 +2,22 @@
 
 ## 项目目标
 
-本仓库以现有期刊 LaTeX 模板为基础，逐步简化为适合论文初稿写作、Pandoc 转 Word 审阅、以及后续按期刊格式整理的模板。
+本仓库维护一个适合论文初稿写作的轻量 LaTeX 模板，并提供稳定的 Pandoc 转 Word 审阅稿流程。项目不是完整期刊投稿模板；最终投稿格式应在定稿阶段迁移到目标期刊模板。
 
-核心目标是保持一套轻量、稳定、可维护的中间模板：
+核心目标：
 
-- LaTeX 侧适合写作、公式、图表、交叉引用和 BibTeX 参考文献管理。
-- Word 侧适合导师、合作者或审稿前内部修改。
-- 初稿阶段避免复杂期刊排版命令，最终投稿前再迁移到目标期刊模板。
+- LaTeX 侧保留论文语义、公式、图表、交叉引用和 BibTeX 参考文献管理。
+- Word 侧便于导师、合作者或内部审阅修改。
+- 初稿阶段避免复杂期刊排版命令，减少 Pandoc 转换不稳定因素。
 
-## 工作原则
+## 文档所有权
 
-- 优先阅读现有文档和脚本，再决定改动。`README.md` 面向中文第一次使用者，`doc/README.en.md` 是英文入口，`doc/technical-stack.md` 面向维护者。
-- 保持 README 简洁，不把实现细节、完整文件清单或脚本内部逻辑堆到 README。
-- 修改中文 README 的用户入口内容时，尽量同步更新 `doc/README.en.md`；如果只改中文表达或暂不适合翻译，应在回复中说明。
-- 技术细节、文件职责、转换链路、排错说明优先放入 `doc/technical-stack.md`。
-- 改动应尽量小而集中。不要顺手重构无关脚本、改写示例论文内容或替换样式模板。
-- 遇到已有未提交改动时，默认认为是用户改的；不要回退、覆盖或清理与当前任务无关的文件。
-- 生成文件和缓存文件通常不需要提交，也不要为了“清理工作区”删除它们，除非用户明确要求。
-- 项目中已有 `refference/` 目录拼写，文档和脚本应沿用当前仓库实际路径，不要擅自改名为 `reference/`。
+- 根目录 `README.md` 是英文公共入口，保持简洁，不放长实现细节。
+- `docs/README.cn.md` 是根 README 的中文翻译，结构应与英文入口同步。
+- `TODO.md` 记录当前活动工作，非简单任务应写明验收标准。
+- `docs/index.md` 是技术文档索引。
+- `docs/technical-stack.md` 保存文件职责、转换链路、脚本实现、Word 样式系统和排错说明。
+- `docs/archive/` 保存已完成或历史性的计划草稿。
 
 ## 常用入口
 
@@ -29,12 +27,13 @@
 - Word 转换快捷入口：`.\convert-docx.ps1`
 - Word 转换主脚本：`.\scripts\tex-to-docx.ps1`
 - Pandoc Lua filter：`filters/latex-crossref-cn.lua`
-- 中文 README：`README.md`
-- 英文 README：`doc/README.en.md`
-- 技术文档：`doc/technical-stack.md`
+- 英文 README：`README.md`
+- 中文 README：`docs/README.cn.md`
+- 技术文档索引：`docs/index.md`
+- 技术文档：`docs/technical-stack.md`
 - VS Code 编译配方：`.vscode/settings.json`
 
-## 文件约定
+## 文件边界
 
 日常写作通常只改：
 
@@ -50,8 +49,9 @@
 - `gbt7714.bst`
 - `gbt7714.csl`
 - `.vscode/settings.json`
+- `docs/technical-stack.md`
 
-以下内容是生成物或本地环境，通常不要手动维护，也不要提交：
+以下内容是生成物或本地环境，通常不要提交：
 
 - `*.pdf`
 - `*.docx`，但 `reference.docx` 是样式模板，应保留
@@ -59,6 +59,8 @@
 - `.pandoc-cache/`
 - `.venv/`
 - `__pycache__/`
+
+项目中已有 `refference/` 目录拼写；文档和脚本应沿用当前仓库实际路径，不要擅自改名为 `reference/`。
 
 ## 转换与验证
 
@@ -83,7 +85,7 @@ xelatex -interaction=nonstopmode temp.tex
 .\convert-docx.ps1
 ```
 
-修改文档或脚本后，至少运行：
+修改文档后至少运行：
 
 ```powershell
 git diff --check
@@ -95,49 +97,12 @@ git diff --check
 pandoc temp.tex --lua-filter=filters\latex-crossref-cn.lua -t native -o C:\tmp\latex-pandoc-filter-check.native
 ```
 
-修改 Word 转换脚本、图片预处理、样式规范化或表格后处理后，建议运行 `.\convert-docx.ps1` 生成 `temp.docx` 做人工检查。生成的 `temp.docx` 是输出文件，通常不提交。
-
-## README 与技术文档分工
-
-README 应回答：
-
-- 这个模板适合做什么。
-- 第一次使用需要准备什么环境。
-- 如何通过 Git clone 或 GitHub ZIP 获取项目。
-- 如何在 VS Code 中打开项目文件夹。
-- 新手主要改哪些文件。
-- 新手暂时不用动哪些文件。
-- 如何编译 PDF 和转换 Word。
-- 去哪里看技术细节。
-- 如何参与贡献。
-
-`doc/README.en.md` 应作为英文版用户入口：
-
-- 与 README 的主要结构和使用流程保持同步。
-- 顶部应反向链接中文 README。
-- 面向英文读者时可以使用更自然的英文表达，不必逐句硬翻译。
-
-`doc/technical-stack.md` 应回答：
-
-- 每个文件和目录的职责。
-- LaTeX、Pandoc、PowerShell、Python、Word Open XML 的分工。
-- PDF 编译和 Word 转换的数据流。
-- Lua filter、DOCX 后处理和样式规范化的实现细节。
-- 常见故障如何排查。
+修改 Word 转换脚本、图片预处理、兼容预处理、样式规范化或表格后处理后，建议运行 `.\convert-docx.ps1` 生成 `temp.docx` 做人工检查。生成的 `temp.docx` 是输出文件，通常不提交。
 
 ## Git 约定
 
-- commit message 使用中文，并遵循约定式提交格式：
-
-  ```text
-  <type>(<scope>): <subject>
-
-  [可选 body]
-
-  [可选 footer]
-  ```
-
-- 常用 type 示例：`docs`、`fix`、`feat`、`refactor`、`test`、`chore`。
+- commit message 使用中文，并遵循 Conventional Commits：`<type>(<scope>): <subject>`。
+- 常用 type：`docs`、`fix`、`feat`、`refactor`、`test`、`chore`。
 - 文档改动优先使用 `docs(...)`。
-- 除非是非常简单的单点改动，否则 commit message 应在 subject 后补充 body，用子条目说明主要改动内容。
+- 非简单改动的 commit body 用独立换行 bullet 概括主要变化，注意使用与提交环境所匹配的换行符。
 - 不要把无关生成文件、缓存或用户未要求的工作区改动一起提交。

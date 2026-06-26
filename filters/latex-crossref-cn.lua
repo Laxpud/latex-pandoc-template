@@ -604,6 +604,39 @@ local function prefix_caption(caption, prefix)
   return caption
 end
 
+
+local function equation_image_inline(div)
+  -- 预处理脚本把复杂公式渲染成 SVG，并用 eq: 锚点包住图片。
+  -- 这里递归地只识别这种约定形态，避免误把普通图片当公式处理。
+  for _, block in ipairs(div.content or {}) do
+    if (block.t == "Para" or block.t == "Plain") and #block.content == 1 then
+      local inline = block.content[1]
+      if inline.t == "Image" then
+        local target = inline.src or (inline.target and inline.target[1]) or ""
+        local alt_text = stringify(inline.caption or {})
+        if target:match("%.svg$") and alt_text:match("^LaTeX equation source:") then
+          return inline
+        end
+      end
+    elseif block.t == "Div" then
+      local nested = equation_image_inline(block)
+      if nested then
+        return nested
+      end
+    end
+  end
+
+  return nil
+end
+
+local function is_equation_image_div(block)
+  return
+    block.t == "Div" and
+    block.identifier and
+    block.identifier:match("^eq:") and
+    equation_image_inline(block) ~= nil
+end
+
 local function strip_equation_latex(math_text)
   local label = math_text:match("\\label%s*{%s*([^}]+)%s*}")
   local cleaned = math_text
@@ -616,7 +649,10 @@ end
 
 local function collect_blocks(blocks)
   for _, block in ipairs(blocks) do
-    if block.t == "Figure" and block.identifier and block.identifier ~= "" then
+    if is_equation_image_div(block) then
+      counters.eq = counters.eq + 1
+      refs[block.identifier] = tostring(counters.eq)
+    elseif block.t == "Figure" and block.identifier and block.identifier ~= "" then
       counters.fig = counters.fig + 1
       refs[block.identifier] = tostring(counters.fig)
     elseif block.t == "Div" and block.identifier and block.identifier:match("^tab:") then
@@ -675,6 +711,32 @@ local function equation_paragraph(math_text, number)
   )
 end
 
+
+local function equation_image_paragraph(div, number)
+  local image = equation_image_inline(div)
+  if not image then
+    return div
+  end
+
+  -- `LptEquationNumbered` 在 reference.docx 中使用两个制表位：第一个把公式
+  -- 图片推到页面中间，第二个把编号推到右侧。SVG 公式也复用这个 Word 段落
+  -- 约定，因此内容顺序必须是 tab + image + tab + number。
+  return styled_div(
+    {
+      pandoc.Para({
+        pandoc.RawInline("openxml", "<w:r><w:tab/></w:r>"),
+        image,
+        pandoc.RawInline("openxml", "<w:r><w:tab/></w:r>"),
+        pandoc.Str("(" .. number .. ")")
+      })
+    },
+    styles.equation,
+    div.identifier,
+    div.classes,
+    div.attributes
+  )
+end
+
 local function style_references(div)
   local styled = {}
 
@@ -699,7 +761,9 @@ local function rewrite_blocks(blocks)
   local rewritten = {}
 
   for _, block in ipairs(blocks) do
-    if block.t == "Figure" and block.identifier and refs[block.identifier] then
+    if is_equation_image_div(block) and refs[block.identifier] then
+      table.insert(rewritten, equation_image_paragraph(block, refs[block.identifier]))
+    elseif block.t == "Figure" and block.identifier and refs[block.identifier] then
       block.caption = prefix_caption(block.caption, "图 " .. refs[block.identifier])
       block.caption = styled_caption(block.caption, styles.figure_caption)
       table.insert(rewritten, block)

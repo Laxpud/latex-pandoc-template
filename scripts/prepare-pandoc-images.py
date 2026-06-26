@@ -38,6 +38,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--input", required=True, help="Source TeX file.")
     parser.add_argument("--output", required=True, help="Temporary TeX file to write.")
     parser.add_argument("--cache-dir", required=True, help="Directory for generated PNG images.")
+    parser.add_argument("--base-dir", default="", help="Base directory for resolving relative image paths.")
     parser.add_argument("--dpi", type=int, default=300, help="Rasterization DPI. Default: 300.")
     return parser.parse_args()
 
@@ -54,6 +55,22 @@ def graphicspath_entries(tex_text: str) -> list[str]:
             if cleaned:
                 entries.append(cleaned)
     return entries
+
+
+def image_search_dirs(tex_text: str, tex_dir: Path, base_dir: Path | None = None) -> list[Path]:
+    """构造图片搜索目录。
+
+    兼容预处理会把中间 TeX 写入缓存目录，但正文图片仍然应按原
+    文稿目录或项目根目录解析，因此 `base_dir` 可以显式覆盖相对
+    路径的基准目录。
+    """
+
+    root = base_dir or tex_dir
+    search_dirs = [root / "fig"]
+    for entry in graphicspath_entries(tex_text):
+        path = Path(entry)
+        search_dirs.append(path if path.is_absolute() else root / path)
+    return search_dirs
 
 
 def candidate_paths(image_ref: str, tex_dir: Path, search_dirs: list[Path]) -> list[Path]:
@@ -148,13 +165,10 @@ def tex_relative_path(path: Path, base_dir: Path) -> str:
         return path.resolve().as_posix()
 
 
-def prepare_tex(input_tex: Path, output_tex: Path, cache_dir: Path, dpi: int) -> int:
+def prepare_tex(input_tex: Path, output_tex: Path, cache_dir: Path, dpi: int, base_dir: Path | None = None) -> int:
     tex_dir = input_tex.resolve().parent
     tex_text = input_tex.read_text(encoding="utf-8")
-    search_dirs = [tex_dir / "fig"]
-    for entry in graphicspath_entries(tex_text):
-        path = Path(entry)
-        search_dirs.append(path if path.is_absolute() else tex_dir / path)
+    search_dirs = image_search_dirs(tex_text, tex_dir, base_dir)
 
     converted: dict[str, str] = {}
 
@@ -183,6 +197,7 @@ def main() -> int:
     input_tex = Path(args.input)
     output_tex = Path(args.output)
     cache_dir = Path(args.cache_dir)
+    base_dir = Path(args.base_dir).resolve() if args.base_dir else None
 
     if args.dpi <= 0:
         raise SystemExit("--dpi must be a positive integer.")
@@ -190,7 +205,7 @@ def main() -> int:
         raise SystemExit(f"Input TeX file does not exist: {input_tex}")
 
     try:
-        count = prepare_tex(input_tex, output_tex, cache_dir, args.dpi)
+        count = prepare_tex(input_tex, output_tex, cache_dir, args.dpi, base_dir=base_dir)
     except Exception as exc:
         print(f"prepare-pandoc-images: {exc}", file=sys.stderr)
         return 1

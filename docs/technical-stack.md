@@ -44,7 +44,8 @@
 - Pandoc citeproc 根据 `reference.bib` 和 `gbt7714.csl` 生成 Word 侧参考文献。
 - Pandoc Lua filter 负责补充中文编号、交叉引用和 Word 自定义样式。
 - PowerShell 负责串联转换流程，并直接处理 DOCX 中的 Open XML。
-- uv 负责创建 Python 环境并运行图片预处理、样式规范化脚本。
+- uv 负责创建 Python 环境并运行兼容预处理、图片预处理、样式规范化脚本。
+- TeX Live 的 `latex` 和 `dvisvgm` 保留给实验性的公式 SVG 渲染分支；该分支当前默认关闭。
 - PyMuPDF 用于把 PDF 图片渲染为 Pandoc DOCX writer 更容易处理的 PNG。
 - VS Code 和 LaTeX Workshop 提供编辑器内的 PDF 编译入口。
 
@@ -76,7 +77,8 @@ uv sync
 ### 转换入口与脚本
 
 - `convert-docx.ps1`：项目推荐的 Word 转换快捷入口。它固定使用当前项目文件名，把 `temp.tex` 转换为 `temp.docx`。
-- `scripts/tex-to-docx.ps1`：Word 转换主脚本，负责串联图片预处理、Pandoc、表格后处理和样式规范化。
+- `scripts/tex-to-docx.ps1`：Word 转换主脚本，负责串联兼容预处理、图片预处理、Pandoc、表格后处理和样式规范化。
+- `scripts/prepare-pandoc-compat.py`：兼容预处理脚本，展开少量常用宏；公式 SVG 渲染分支保留在脚本中但当前默认关闭。
 - `scripts/prepare-pandoc-images.py`：图片预处理脚本，把 LaTeX 中引用的 PDF 图片渲染为 PNG，并写入 Pandoc 临时输入文件。
 - `scripts/apply-docx-table-styles.ps1`：DOCX 表格后处理脚本，直接修改 `word/document.xml`，补充三线表边框、居中、自适应宽度和表格段落样式。
 - `scripts/namespace-reference-docx-styles.py`：样式规范化脚本，维护 `Lpt...` 样式 ID、标题编号和文档内样式引用。
@@ -213,12 +215,13 @@ LaTeX Workshop 工具参数中使用 `%DOC%` 和 `%DOCFILE%`：
 
 `scripts/tex-to-docx.ps1` 的主要流程：
 
-1. 设置 `$ErrorActionPreference = "Stop"`，确保中间步骤失败时立即停止。
-2. 计算仓库根目录、Lua filter、Pandoc 缓存目录和图片缓存目录。
-3. 调用 `scripts/prepare-pandoc-images.py` 生成 `.pandoc-cache/temp-pandoc.tex`。
-4. 组装 Pandoc 参数并执行 DOCX 转换。
-5. 调用 `scripts/apply-docx-table-styles.ps1` 修正表格 Open XML。
-6. 调用 `scripts/namespace-reference-docx-styles.py` 规范化 DOCX 样式 ID。
+1. 设置 `$ErrorActionPreference = "Stop"`，并检查 native 命令退出码，确保中间步骤失败时立即停止。
+2. 计算仓库根目录、Lua filter、Pandoc 缓存目录、图片缓存目录和公式缓存目录。
+3. 调用 `scripts/prepare-pandoc-compat.py` 生成 `.pandoc-cache/compat/temp-compat.tex`。
+4. 调用 `scripts/prepare-pandoc-images.py` 生成 `.pandoc-cache/temp-pandoc.tex`。
+5. 组装 Pandoc 参数并执行 DOCX 转换。
+6. 调用 `scripts/apply-docx-table-styles.ps1` 修正表格 Open XML。
+7. 调用 `scripts/namespace-reference-docx-styles.py` 规范化 DOCX 样式 ID。
 
 Pandoc 核心参数包括：
 
@@ -228,10 +231,30 @@ Pandoc 核心参数包括：
 - `--lua-filter=filters/latex-crossref-cn.lua`：启用中文编号和样式处理。
 - `--bibliography=...`：指定 BibTeX 数据库。
 - `--csl=...`：指定 Word 侧参考文献样式。
-- `--resource-path=.;fig;refference/fig;.pandoc-cache/images`：指定图片搜索路径。
+- `--resource-path=.;fig;refference/fig;.pandoc-cache/images;.pandoc-cache/equations`：指定普通图片和实验性公式图片缓存的搜索路径。
 - `--reference-doc=reference.docx`：指定 Word 样式模板。
 
 缓存目录 `.pandoc-cache/` 被 `.gitignore` 忽略，里面的内容可随时删除后重新生成。
+
+
+## 兼容预处理
+
+`scripts/prepare-pandoc-compat.py` 在 Pandoc 读取 LaTeX 之前运行，只处理当前模板明确支持的窄子集。它的目标是提高 Word 审阅稿稳定性，而不是完整复刻 LaTeX 宏包。
+
+当前处理包括：
+
+- 读取 `\newacronym` 和 `\glsxtrnewsymbol` 定义，并把正文中的 `\gls`、`\glspl` 展开为普通文本。
+- 将 `\printunsrtglossary[type=symbols]` 和 `type=acronym` 降级为普通两列表格，便于 Pandoc 转成 Word 表格。
+- 将常用 `siunitx` 写法 `\SI`、`\SIrange`、`\si` 和 `\ang` 展开为普通文本。
+- 将 `\bm{...}` 改写为 `\boldsymbol{...}`，便于 Pandoc 与 Word 原生公式路径继续识别粗体符号。
+- 保留实验性的编号公式 SVG 渲染代码，但 `prepare_tex_text()` 当前注释掉了该调用，默认仍让带 `\label{eq:...}` 的 `equation` 环境走 Pandoc 与 Word 原生公式路径。
+
+生成的中间文件和缓存分别位于：
+
+- `.pandoc-cache/compat/temp-compat.tex`：兼容预处理后的 LaTeX。
+- `.pandoc-cache/equations/`：实验性公式 SVG 分支使用的缓存目录。当前默认路径下通常不会生成新 SVG。
+
+当前不处理 `\nocite`、AHS 风格 `\abstract{...}`、`minipage` 表格和 `tbl:` 标签兼容。公式默认交给 Pandoc 生成 Word 原生 OMML；若重新启用 SVG 分支，需要重新检查公式图片与编号的基线对齐。
 
 ## 图片预处理
 
@@ -242,6 +265,7 @@ Word 不直接支持将 PDF 矢量图作为普通图片稳定写入 DOCX。为�
 - `--input`：源 TeX 文件。
 - `--output`：写给 Pandoc 使用的临时 TeX 文件。
 - `--cache-dir`：PNG 图片缓存目录。
+- `--base-dir`：相对图片路径的基准目录；当输入是 `.pandoc-cache/compat/temp-compat.tex` 时用于继续按仓库根目录解析 `fig/` 和 `\graphicspath`。
 - `--dpi`：PDF 渲染 DPI，默认 300。
 
 脚本会扫描：

@@ -2,7 +2,10 @@
 
 \usepackage[UTF8]{ctex}
 \usepackage{amsmath}
+\usepackage{bm}
 \usepackage{booktabs}
+\usepackage{siunitx}
+\usepackage[symbols,acronym,nogroupskip,sort=none]{glossaries-extra}
 \usepackage[super,square,numbers,sort&compress]{natbib}
 \usepackage{graphicx}
 \usepackage[margin=2.54cm]{geometry}
@@ -11,6 +14,13 @@
 \providecommand{\V}[1]{\v{#1}}
 
 \graphicspath{{fig/}{refference/fig/}}
+
+% 这些定义用于演示转换兼容层支持的 glossary / siunitx 子集。
+% 实际论文中可继续使用相同写法，转 Word 前会被预处理为普通文本。
+\newacronym{demoRANS}{RANS}{Reynolds-averaged Navier-Stokes}
+\newacronym{demoUAV}{UAV}{Unmanned Aerial Vehicle}
+\glsxtrnewsymbol[description={示例长度，单位 \si{m}}]{demoL}{\ensuremath{L}}
+
 
 \newenvironment{frontmatterblock}
   {\begin{quotation}\small}
@@ -73,6 +83,34 @@
 \end{equation}
 
 其中，$x$为自变量，$y$为因变量，$a$和$b$分别为模型参数。正文中可以继续引用式\ref{eq:sample}，但不建议使用期刊模板专用的自定义引用命令。 Here, $x$ is the independent variable, $y$ is the dependent variable, and $a$ and $b$ are model parameters. The body text can continue to cite Equation \ref{eq:sample}, but journal-template-specific custom reference commands are not recommended.
+
+
+\subsection{转换兼容性示例 Conversion Compatibility Examples}
+\label{subsec:compatibility}
+
+本节给出少量转换兼容性示例，用于检查 Word 转换前预处理能否展开常用缩略语、符号和单位。示例中，\gls{demoRANS} 方法和两个 \glspl{demoUAV} 共享特征长度 \gls{demoL}；采样频率可写为 \SI{450}{Hz}，频带可写为 \SIrange{450}{700}{Hz}，角度可写为 \ang{-2}。 The compatibility examples exercise glossary expansion, siunitx-style units, and SVG-rendered equations without relying on journal-specific commands.
+
+\printunsrtglossary[type=symbols]
+\printunsrtglossary[type=acronym]
+
+式\ref{eq:compat-aligned}和式\ref{eq:compat-cases}用于触发复杂公式 SVG 渲染。 Equation \ref{eq:compat-aligned} and Equation \ref{eq:compat-cases} trigger SVG rendering for complex displayed equations.
+
+\begin{equation}
+  \begin{aligned}
+    \label{eq:compat-aligned}
+    \bm{q}_{k+1} &= \bm{A}\bm{q}_k + \bm{b} \\
+    y_k &= \bm{c}^{\mathrm{T}}\bm{q}_k
+  \end{aligned}
+\end{equation}
+
+\begin{equation}
+  \label{eq:compat-cases}
+  f(x) =
+  \begin{cases}
+    0, & x < 0 \\
+    x^2, & x \geq 0
+  \end{cases}
+\end{equation}
 
 \section{结果与讨论 Results and Discussion}
 \label{sec:results}

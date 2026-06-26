@@ -1,140 +1,142 @@
-# LaTeX Pandoc 论文手稿模板
+# LaTeX Pandoc Manuscript Template
 
-- 🌐 **[English README](doc/README.en.md)**：English guide for this template.
-- 🛠️ **[技术栈与实现说明](doc/technical-stack.md)**：文件职责、转换链路、脚本实现和维护说明。
-- 🤝 **[参与贡献](#参与贡献)**：报告问题、分享使用场景或一起改进模板。
+- 🌐 **[中文 README](docs/README.cn.md)**: Chinese guide for this template.
+- 🗺️ **[Technical Docs Index](docs/index.md)**: Technical notes, maintenance docs, and archived plans.
+- 🛠️ **[Technical Stack and Implementation Notes](docs/technical-stack.md)**: File responsibilities, conversion pipeline, scripts, and maintenance notes.
+- ✅ **[Project TODO](TODO.md)**: Active documentation and conversion work.
+- 🤝 **[Contributing](#contributing)**: Report issues, share use cases, or help improve the template.
 
-这是一个面向论文初稿写作的极简 LaTeX 模板。它保留标题、作者、摘要、关键词、章节、图表、公式、交叉引用和参考文献等常用论文结构，同时尽量减少复杂期刊排版命令，方便后续用 Pandoc 转成 Word 审阅稿。
+This is a minimal LaTeX template for drafting academic manuscripts. It keeps common paper structures such as title, authors, abstract, keywords, sections, figures, tables, equations, cross references, and references, while avoiding complex journal-specific layout commands so the manuscript can be converted to a Word review draft with Pandoc.
 
-如果这个模板帮你少踩了一些 LaTeX 和 Word 转换的坑，欢迎给仓库点个 Star。也欢迎你提交问题、分享使用场景，或一起改进这个模板。
+If this template helps you avoid some LaTeX-to-Word conversion pain, please consider starring the repository. Issues, usage stories, and contributions are also welcome.
 
-## 适合做什么
+## What This Is For
 
-- 用 `temp.tex` 写论文初稿。
-- 用 XeLaTeX 编译 PDF，检查公式、图片和参考文献。
-- 用 Pandoc 转换为 Word，便于导师、合作者或审稿前内部修改。
-- 在定稿阶段再迁移到目标期刊模板。
+- Drafting a manuscript in `temp.tex`.
+- Compiling a PDF with XeLaTeX to check equations, figures, and references.
+- Converting the manuscript to Word for advisor, collaborator, or internal review.
+- Moving the finished draft to a target journal template later.
 
-## 环境准备
+## Environment
 
-最低需要安装以下工具：
+Required tools:
 
-- TeX Live，并确保 `xelatex` 和 `bibtex` 可用。官方下载页面：[TeX Live](https://www.tug.org/texlive/acquire.html)。
-- Pandoc。官方下载页面：[Installing pandoc](https://pandoc.org/installing.html)。
-- PowerShell。Windows 通常自带 Windows PowerShell；如果需要安装新版 PowerShell 7，可参考：[Install PowerShell on Windows](https://learn.microsoft.com/en-us/powershell/scripting/install/install-powershell-on-windows)。
-- uv，用来创建 Python 环境并运行图片预处理脚本。官方下载页面：[Installing uv](https://docs.astral.sh/uv/getting-started/installation/)。
+- TeX Live, with `xelatex` and `bibtex` available. Official download page: [TeX Live](https://www.tug.org/texlive/acquire.html).
+- Pandoc. Official download page: [Installing pandoc](https://pandoc.org/installing.html).
+- PowerShell. Windows usually includes Windows PowerShell. To install PowerShell 7, see [Install PowerShell on Windows](https://learn.microsoft.com/en-us/powershell/scripting/install/install-powershell-on-windows).
+- uv, used to create the Python environment and run the image preprocessing script. Official installation page: [Installing uv](https://docs.astral.sh/uv/getting-started/installation/).
 
-可选编辑器环境：
+Optional editor setup:
 
-- VS Code。官方下载页面：[Download Visual Studio Code](https://code.visualstudio.com/download)。
-- LaTeX Workshop 扩展。直接从 VS Code 内部扩展市场安装，官方扩展页面：[LaTeX Workshop](https://marketplace.visualstudio.com/items?itemName=James-Yu.latex-workshop)。
-- Git。如果你不想安装 Git，也可以直接从 GitHub 下载 ZIP。官方下载页面：[Git Downloads](https://git-scm.com/downloads/)。
+- VS Code. Official download page: [Download Visual Studio Code](https://code.visualstudio.com/download).
+- LaTeX Workshop extension. Install it from the VS Code extension marketplace, or see the extension page: [LaTeX Workshop](https://marketplace.visualstudio.com/items?itemName=James-Yu.latex-workshop).
+- Git. If you do not want to install Git, you can download the repository as a ZIP file from GitHub. Official download page: [Git Downloads](https://git-scm.com/downloads/).
 
-本仓库的 `.vscode/settings.json` 已经写好 LaTeX Workshop 配方：
+This repository already includes LaTeX Workshop recipes in `.vscode/settings.json`:
 
-- `latexmk`：使用 `latexmk -xelatex` 自动处理多轮编译。
-- `xelatex -> bibtex -> xelatex*2`：手动指定完整的参考文献编译流程。
+- `latexmk`: uses `latexmk -xelatex` to handle multi-pass compilation automatically.
+- `xelatex -> bibtex -> xelatex*2`: explicitly runs the full bibliography compilation sequence.
 
-为了避免打开文件后自动反复编译，仓库中已将 `latex-workshop.latex.autoBuild.run` 设置为 `never`。需要编译时，可在 VS Code 命令面板中执行 `LaTeX Workshop: Build with recipe` 并选择对应配方。
+Automatic LaTeX Workshop builds are disabled with `latex-workshop.latex.autoBuild.run = never`, so the project does not recompile repeatedly whenever files are opened or saved. To build manually, run `LaTeX Workshop: Build with recipe` from the VS Code command palette and choose a recipe.
 
-当前本机已验证的主要环境：
+Main environment verified locally:
 
-- XeTeX 3.141592653-2.6-0.999998，TeX Live 2026。
-- Pandoc 3.8，Lua 5.4。
-- uv 0.10.4。
-- uv Python 3.14.3。
-- Python 依赖：`PyMuPDF>=1.24.0`。
+- XeTeX 3.141592653-2.6-0.999998, TeX Live 2026.
+- Pandoc 3.8, Lua 5.4.
+- uv 0.10.4.
+- uv Python 3.14.3.
+- Python dependency: `PyMuPDF>=1.24.0`.
 
-更完整的文件说明、转换链路和维护细节见 [技术栈与实现说明](doc/technical-stack.md)。
+For detailed file descriptions, conversion internals, and maintenance notes, see [Technical Stack and Implementation Notes](docs/technical-stack.md).
 
-## 快速开始
+## Quick Start
 
-下面从一个全新的本地目录开始说明。命令默认在 PowerShell 中运行。
+The steps below assume a fresh local directory. Commands are shown for PowerShell.
 
-1. 获取项目文件。
+1. Get the project files.
 
-   如果已经安装 Git，推荐用 `git clone`：
+   If Git is installed, `git clone` is recommended:
 
    ```powershell
    git clone https://github.com/Laxpud/latex-pandoc-template.git
    cd latex-pandoc-template
    ```
 
-   如果没有安装 Git，也可以手动下载：
+   If Git is not installed, download the project manually:
 
-   1. 打开项目页面：<https://github.com/Laxpud/latex-pandoc-template>。
-   2. 点击 `Code`。
-   3. 选择 `Download ZIP`。
-   4. 解压 ZIP 文件。
-   5. 在 PowerShell 中进入解压后的 `latex-pandoc-template` 文件夹。
+   1. Open <https://github.com/Laxpud/latex-pandoc-template>.
+   2. Click `Code`.
+   3. Choose `Download ZIP`.
+   4. Extract the ZIP file.
+   5. In PowerShell, enter the extracted `latex-pandoc-template` folder.
 
-2. 用 VS Code 打开项目文件夹：
+2. Open the project folder in VS Code:
 
    ```powershell
    code .
    ```
 
-   如果 `code` 命令不可用，也可以先打开 VS Code，再选择 `File -> Open Folder...`，打开刚刚 clone 下来的 `latex-pandoc-template` 文件夹。
+   If the `code` command is unavailable, open VS Code first, then choose `File -> Open Folder...` and select the `latex-pandoc-template` folder.
 
-3. 在 VS Code 中安装或确认已安装 LaTeX Workshop 扩展。
+3. Install or confirm the LaTeX Workshop extension in VS Code.
 
-   本仓库已经提供 `.vscode/settings.json`，打开项目文件夹后，LaTeX Workshop 会自动读取里面的编译配方。
+   The repository already provides `.vscode/settings.json`, so LaTeX Workshop will load the project recipes after the folder is opened.
 
-4. 准备 Python 依赖：
+4. Prepare Python dependencies:
 
    ```powershell
    uv sync
    ```
 
-   这一步会创建 `.venv/`，并安装图片预处理脚本需要的 Python 依赖。
+   This creates `.venv/` and installs the Python dependency needed by the image preprocessing script.
 
-5. 打开 `temp.tex`，先尝试编译 PDF。
+5. Open `temp.tex` and compile the PDF first.
 
-   在 VS Code 命令面板中执行 `LaTeX Workshop: Build with recipe`，选择 `latexmk` 或 `xelatex -> bibtex -> xelatex*2`。
+   In the VS Code command palette, run `LaTeX Workshop: Build with recipe`, then choose `latexmk` or `xelatex -> bibtex -> xelatex*2`.
 
-   编译成功后，会得到 `temp.pdf`。如果 VS Code 没有自动显示 PDF，可以在文件列表中手动打开 `temp.pdf`。
+   A successful build produces `temp.pdf`. If VS Code does not display it automatically, open `temp.pdf` from the file list.
 
-6. 转换 Word 审阅稿：
+6. Convert the manuscript to a Word review draft:
 
    ```powershell
    .\convert-docx.ps1
    ```
 
-   转换成功后，会得到 `temp.docx`。
+   A successful conversion produces `temp.docx`.
 
-7. 开始替换示例内容。
+7. Start replacing the example content.
 
-   优先改 `temp.tex`、`reference.bib` 和 `fig/`。建议先保持示例中的章节、图表、公式和参考文献结构，逐步替换为自己的论文内容。
+   Focus first on `temp.tex`, `reference.bib`, and `fig/`. It is best to keep the example section, figure, table, equation, and reference structure at the beginning, then gradually replace it with your own paper content.
 
-## 第一次使用时主要改哪些文件
+## Files To Edit First
 
-如果你刚开始接触 LaTeX，通常只需要关注这几个位置：
+If you are new to LaTeX, you usually only need to focus on:
 
-- `temp.tex`：论文正文。标题、作者、摘要、关键词、章节、图表、公式和引用都从这里改。
-- `reference.bib`：参考文献数据库。新增论文、书籍、网页等文献条目时改这里。
-- `fig/`：正文图片目录。把论文中需要使用的 PNG、JPG、PDF 图片放到这里。
+- `temp.tex`: the manuscript source. Edit the title, authors, abstract, keywords, sections, figures, tables, equations, and citations here.
+- `reference.bib`: the BibTeX reference database. Add journal papers, books, web pages, and other references here.
+- `fig/`: the figure directory. Put the PNG, JPG, or PDF images used by the manuscript here.
 
-写作时建议从 `temp.tex` 里的示例结构开始替换内容，不要一开始就大幅改导言区和转换脚本。需要了解每个文件的具体职责时，再看 [技术栈与实现说明](doc/technical-stack.md)。
+Start by replacing the examples in `temp.tex`. Avoid changing the preamble or conversion scripts at the beginning. For detailed file responsibilities, see [Technical Stack and Implementation Notes](docs/technical-stack.md).
 
-## 第一次使用时先注意哪些文件
+## Files To Notice But Usually Not Edit
 
-下面这些文件通常不需要在写作初稿时修改：
+These files usually do not need to be modified while drafting:
 
-- `gbt7714.bst` 和 `gbt7714.csl`：分别用于 PDF 和 Word 的参考文献格式。
-- `reference.docx`：Word 样式模板，只有需要调整 Word 输出样式时再改。
-- `.vscode/settings.json`：VS Code 编译配方，已经配置好 LaTeX Workshop。
-- `convert-docx.ps1`、`scripts/` 和 `filters/`：Word 转换流程相关脚本，日常写作只需要运行，不需要修改。
-- `.pandoc-cache/`、`.venv/` 和 LaTeX 辅助文件：自动生成内容，不需要手动维护，也不需要提交到 Git。
+- `gbt7714.bst` and `gbt7714.csl`: reference styles for PDF and Word output.
+- `reference.docx`: Word style template. Edit it only when you need to change Word output styles.
+- `.vscode/settings.json`: VS Code build recipes for LaTeX Workshop.
+- `convert-docx.ps1`, `scripts/`, and `filters/`: Word conversion scripts. Run them during normal writing; do not edit them unless maintaining the conversion pipeline.
+- `.pandoc-cache/`, `.venv/`, and LaTeX auxiliary files: generated content. Do not maintain them manually and do not commit them.
 
-## 编译 PDF
+## Compile PDF
 
-可以在 VS Code 中使用 LaTeX Workshop：
+In VS Code with LaTeX Workshop:
 
-1. 打开 `temp.tex`。
-2. 执行 `LaTeX Workshop: Build with recipe`。
-3. 选择 `latexmk` 或 `xelatex -> bibtex -> xelatex*2`。
+1. Open `temp.tex`.
+2. Run `LaTeX Workshop: Build with recipe`.
+3. Choose `latexmk` or `xelatex -> bibtex -> xelatex*2`.
 
-也可以在仓库根目录手动运行：
+Or run the full sequence manually from the repository root:
 
 ```powershell
 xelatex -interaction=nonstopmode temp.tex
@@ -143,17 +145,17 @@ xelatex -interaction=nonstopmode temp.tex
 xelatex -interaction=nonstopmode temp.tex
 ```
 
-生成结果为 `temp.pdf`。如果没有新增或修改参考文献，通常只运行一次或两次 `xelatex` 也可以。
+The result is `temp.pdf`. If references or labels have not changed, one or two XeLaTeX runs are often enough.
 
-## 转换为 Word
+## Convert To Word
 
-推荐直接运行根目录快捷脚本：
+Run the root shortcut script:
 
 ```powershell
 .\convert-docx.ps1
 ```
 
-生成结果为 `temp.docx`。该脚本等价于调用：
+The result is `temp.docx`. This is equivalent to:
 
 ```powershell
 .\scripts\tex-to-docx.ps1 `
@@ -164,63 +166,64 @@ xelatex -interaction=nonstopmode temp.tex
     -ReferenceDoc reference.docx
 ```
 
-脚本会自动完成这些步骤：
+The script automatically:
 
-- 将 LaTeX 中引用的 PDF 图片转换为 Pandoc 更容易写入 Word 的 PNG 图片。
-- 调用 Pandoc 和 Lua filter 生成 DOCX。
-- 为 Word 表格补充三线表边框和表格段落样式，并自动居中、按内容调整表格宽度。
-- 规范化 Word 文档中的项目样式 ID，使其使用 `Lpt...` 前缀。
+- Expands a small compatibility subset such as `\gls`, `\SI`, `\SIrange`, `\ang`, and `\bm`.
+- Converts PDF figures referenced in LaTeX to PNG images that Pandoc can place in Word more reliably.
+- Runs Pandoc and the Lua filter to generate DOCX.
+- Adds three-line-table borders and table paragraph styles in Word, centers tables, and enables autofit width.
+- Normalizes project style IDs in the Word document to use the `Lpt...` prefix.
 
-如果需要自定义输入、输出或样式模板，可以直接调用 `scripts/tex-to-docx.ps1` 并传入参数。
+For custom input, output, or style templates, call `scripts/tex-to-docx.ps1` directly with parameters.
 
-## Word 样式模板
+## Word Style Template
 
-`reference.docx` 中的项目样式 ID 使用 `Lpt...` 前缀，例如 `LptHeading1`、`LptBodyText`、`LptTableCaption` 和 `LptReferenceItem`，以避免和 Word/Pandoc 内置样式 ID 重复。
+Project style IDs in `reference.docx` use the `Lpt...` prefix, such as `LptHeading1`, `LptBodyText`, `LptTableCaption`, and `LptReferenceItem`, to avoid conflicts with Word or Pandoc built-in style IDs.
 
-替换或重新生成 `reference.docx` 后，可以运行：
+After replacing or regenerating `reference.docx`, run:
 
 ```powershell
 uv run python .\scripts\namespace-reference-docx-styles.py reference.docx
 ```
 
-调整标题格式时，不要在 `reference.docx` 正文里手动输入 `1`、`1.1` 这类编号；标题编号需要通过 Word 多级列表绑定到 `LptHeading1`、`LptHeading2` 和 `LptHeading3` 样式。上面的脚本会自动修复这三个标题样式的多级编号关系。
+When adjusting heading styles, do not manually type numbers such as `1` or `1.1` in the body of `reference.docx`. Heading numbering should be bound through Word multilevel lists to `LptHeading1`, `LptHeading2`, and `LptHeading3`. The script above repairs those numbering relationships.
 
-## 写作建议
+## Writing Tips
 
-- 标题、作者、摘要和关键词保留在正文开头。
-- 正文章节使用 `\section`、`\subsection`、`\subsubsection`。
-- 图片使用标准 `figure` 环境，并保留一个 `\caption` 和一个 `\label`。
-- 表格优先使用 `booktabs` 的 `\toprule`、`\midrule`、`\bottomrule`。
-- 公式使用标准 `equation` 环境，并用 `\label` 标记。
-- 引用参考文献使用普通 `\cite{...}`。
+- Keep title, authors, abstract, and keywords at the beginning of the manuscript.
+- Use `\section`, `\subsection`, and `\subsubsection` for section levels.
+- Use the standard `figure` environment, with one `\caption` and one `\label`.
+- Prefer `booktabs` tables with `\toprule`, `\midrule`, and `\bottomrule`.
+- Use the standard `equation` environment and add `\label` for equations.
+- Use ordinary `\cite{...}` commands for references.
 
-建议避免在初稿阶段加入复杂期刊模板命令，例如自定义双栏、页眉页脚、复杂标题页、双语图题计数器回退等。这些内容可以在最终投递前再迁移到期刊模板中处理。
+Avoid complex journal-template commands during drafting, such as custom two-column layout, headers and footers, complex title pages, or bilingual caption counter fallbacks. These can be handled later when moving the finished manuscript to the target journal template.
 
-## 图片说明
+## Figures
 
-LaTeX 编译 PDF 时可以直接使用 PDF 矢量图。转 Word 时，`scripts/prepare-pandoc-images.py` 会自动把被 `\includegraphics` 引用的 PDF 图片渲染为 PNG，并写入 `.pandoc-cache/images/`。
+For LaTeX PDF output, PDF vector figures can be used directly. During Word conversion, `scripts/prepare-pandoc-images.py` automatically renders PDF figures referenced by `\includegraphics` to PNG and writes them to `.pandoc-cache/images/`.
 
-普通 PNG、JPG 等位图可以直接放入 `fig/` 后引用。
+Regular PNG and JPG images can be placed in `fig/` and referenced directly.
 
-## Git 提示
+## Git Notes
 
-生成文件会被 `.gitignore` 忽略，包括：
+Generated files are ignored by `.gitignore`, including:
 
 - `*.pdf`
 - `*.docx`
-- LaTeX 辅助文件
+- LaTeX auxiliary files
 - `.pandoc-cache/`
 - `.venv/`
 
-通常只需要提交源文件、脚本、过滤器、参考文献文件和 `fig/` 中需要保留的图片资源。
+Usually, only source files, scripts, filters, reference files, and figure assets that should be kept in `fig/` need to be committed.
 
-## 参与贡献
+## Contributing
 
-欢迎参与这个项目，尤其是下面这些方向：
+Contributions are welcome, especially in these areas:
 
-- 报告 LaTeX 编译或 Pandoc 转 Word 时遇到的问题。
-- 补充更清晰的新手使用说明。
-- 改进 Word 样式模板、图表格式或参考文献格式。
-- 分享不同论文写作场景下的兼容性问题和解决办法。
+- Report problems encountered during LaTeX compilation or Pandoc-to-Word conversion.
+- Improve beginner-friendly usage documentation.
+- Improve the Word style template, figure/table formatting, or reference formatting.
+- Share compatibility issues and fixes from different manuscript writing scenarios.
 
-如果你准备提交改动，建议先确认生成文件没有被一起提交；复杂改动可以在提交说明里用子条目写清楚主要变化。
+Before submitting changes, make sure generated files are not included by accident. For non-trivial changes, use commit message body bullets to describe the main changes clearly.

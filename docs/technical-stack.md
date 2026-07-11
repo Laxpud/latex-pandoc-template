@@ -17,6 +17,7 @@
 
 - 标题、作者、日期、摘要、关键词。
 - `\section`、`\subsection`、`\subsubsection` 三级标题。
+- 标准 `itemize`、`enumerate` 和 `\item` 列表，包含嵌套层级。
 - 标准 `figure`、`table`、`equation` 环境。
 - `\label`、`\ref` 和 `\cite`。
 - PDF、PNG、JPG 等常见图片格式。
@@ -343,7 +344,7 @@ filter 会读取 Pandoc meta 中的 `title`、`author`、`date` 和 `abstract`�
 - 二级标题：`LptHeading2`
 - 三级标题：`LptHeading3`
 
-普通段落和普通行会使用 `LptBodyText`。关键词段落通过开头的 `关键词` 或加粗 `关键词` 识别，并使用 `LptKeywords`。
+普通段落和普通行会使用 `LptBodyText`。`OrderedList` 与 `BulletList` 会保留 Pandoc 原生 `numPr` 编号，并分别为列表项段落应用 `LptOrderedList` 与 `LptBulletList`；嵌套列表按自身类型继续处理。关键词段落通过开头的 `关键词` 或加粗 `关键词` 识别，并使用 `LptKeywords`。
 
 ### 图、表、公式编号
 
@@ -416,6 +417,8 @@ Lua filter 会在 Pandoc AST 层面为表头和表身单元格内容加样式：
 - `LptHeading2`：二级标题。
 - `LptHeading3`：三级标题。
 - `LptBodyText`：正文。
+- `LptOrderedList`：有序列表项；编号和层级由 Pandoc 原生列表定义控制。
+- `LptBulletList`：项目符号列表项；编号和层级由 Pandoc 原生列表定义控制。
 - `LptFigureCaption`：图题。
 - `LptTableCaption`：表题。
 - `LptEquationNumbered`：带编号公式。
@@ -480,6 +483,7 @@ Lua filter 会在 Pandoc AST 层面为表头和表身单元格内容加样式：
 - 清理重复 style ID。
 - 将非项目样式中的 `Lpt...` 引用恢复为内置样式引用，避免污染 Word 内置样式。
 - 修正 `LptBodyText` 与正文基准样式之间的关系。
+- 确保 `LptOrderedList` 与 `LptBulletList` 存在，并清除正文首行缩进，避免与 Pandoc 列表缩进叠加。
 
 样式 ID 映射集中在脚本中的 `STYLE_ID_MAP`。维护样式时应优先修改这张映射，而不是在多个脚本中散落新增样式名。
 

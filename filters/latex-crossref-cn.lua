@@ -16,6 +16,8 @@ local styles = {
   heading2 = "LptHeading2",
   heading3 = "LptHeading3",
   body = "LptBodyText",
+  ordered_list = "LptOrderedList",
+  bullet_list = "LptBulletList",
   figure_caption = "LptFigureCaption",
   table_caption = "LptTableCaption",
   equation = "LptEquationNumbered",
@@ -508,6 +510,35 @@ local function style_table(table_block)
   return table_block
 end
 
+local style_list
+
+local function style_list_item_blocks(blocks, style_name)
+  local styled = {}
+
+  for _, block in ipairs(blocks) do
+    if block.t == "Plain" or block.t == "Para" then
+      table.insert(styled, style_plain_or_para(block, style_name))
+    elseif block.t == "BulletList" then
+      table.insert(styled, style_list(block, styles.bullet_list))
+    elseif block.t == "OrderedList" then
+      table.insert(styled, style_list(block, styles.ordered_list))
+    else
+      table.insert(styled, block)
+    end
+  end
+
+  return styled
+end
+
+style_list = function(list_block, style_name)
+  -- Pandoc 负责保留 list 的 numPr 与层级；这里只给每个可编辑段落
+  -- 添加项目样式。嵌套列表按自身类型递归处理，避免父级样式泄漏。
+  for index, item_blocks in ipairs(list_block.content) do
+    list_block.content[index] = style_list_item_blocks(item_blocks, style_name)
+  end
+  return list_block
+end
+
 local function front_matter_blocks(meta)
   local blocks = {}
 
@@ -781,6 +812,10 @@ local function rewrite_blocks(blocks)
       table.insert(rewritten, number_table(block, block.identifier))
     elseif block.t == "Header" then
       table.insert(rewritten, style_header(block))
+    elseif block.t == "BulletList" then
+      table.insert(rewritten, style_list(block, styles.bullet_list))
+    elseif block.t == "OrderedList" then
+      table.insert(rewritten, style_list(block, styles.ordered_list))
     elseif block.t == "Para" and #block.content == 1 and block.content[1].t == "Math" then
       local math = block.content[1]
       if math.mathtype == "DisplayMath" then

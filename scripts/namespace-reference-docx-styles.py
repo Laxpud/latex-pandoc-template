@@ -20,6 +20,8 @@ ILVL = f"{{{WORD_NS}}}ilvl"
 POS = f"{{{WORD_NS}}}pos"
 LEFT = f"{{{WORD_NS}}}left"
 HANGING = f"{{{WORD_NS}}}hanging"
+FIRST_LINE = f"{{{WORD_NS}}}firstLine"
+FIRST_LINE_CHARS = f"{{{WORD_NS}}}firstLineChars"
 
 STYLE_ID_MAP = {
     "PaperTitle": "LptPaperTitle",
@@ -31,6 +33,8 @@ STYLE_ID_MAP = {
     "Heading2": "LptHeading2",
     "Heading3": "LptHeading3",
     "BodyText": "LptBodyText",
+    "OrderedList": "LptOrderedList",
+    "BulletList": "LptBulletList",
     "FigureCaption": "LptFigureCaption",
     "TableCaption": "LptTableCaption",
     "EquationNumbered": "LptEquationNumbered",
@@ -48,6 +52,7 @@ HEADING_NUMBERING_LEVELS = (
     ("1", "LptHeading2", "%1.%2", "540"),
     ("2", "LptHeading3", "%1.%2.%3", "720"),
 )
+LIST_STYLE_IDS = ("LptOrderedList", "LptBulletList")
 
 ET.register_namespace("w", WORD_NS)
 
@@ -345,6 +350,52 @@ def insert_project_heading_styles(root: ET.Element) -> int:
     return changed
 
 
+def ensure_list_styles(root: ET.Element) -> int:
+    """确保列表项样式继承正文外观，但不接管 Pandoc 的编号定义。"""
+
+    body_style = root.find(f"{qn('style')}[@{STYLE_ID}='LptBodyText']")
+    if body_style is None:
+        return 0
+
+    changed = 0
+    for style_id in LIST_STYLE_IDS:
+        style = root.find(f"{qn('style')}[@{STYLE_ID}='{style_id}']")
+        if style is None:
+            style = ET.Element(
+                qn("style"),
+                {
+                    STYLE_ID: style_id,
+                    qn("type"): "paragraph",
+                    qn("customStyle"): "1",
+                },
+            )
+            root.append(style)
+            changed += 1
+
+        changed += set_attr(style, qn("type"), "paragraph")
+        changed += set_attr(style, qn("customStyle"), "1")
+        changed += set_child_val(style, "name", style_id)
+        changed += set_child_val(style, "basedOn", "LptBodyText")
+        changed += set_child_val(style, "next", style_id)
+
+        ppr = ensure_style_child(style, "pPr")
+        changed += remove_children(ppr, "numPr")
+        list_indent = ET.Element(
+            qn("ind"),
+            {
+                FIRST_LINE: "0",
+                FIRST_LINE_CHARS: "0",
+            },
+        )
+        changed += replace_child(
+            ppr,
+            list_indent,
+            before_names={"spacing", "contextualSpacing", "jc", "outlineLvl", "rPr"},
+        )
+
+    return changed
+
+
 def rewrite_style_refs_in_project_style(style: ET.Element) -> int:
     changed = 0
 
@@ -381,6 +432,7 @@ def restore_builtin_style_refs(style: ET.Element) -> int:
 def rewrite_styles_xml(root: ET.Element) -> int:
     changed = remove_duplicate_styles(root)
     changed += insert_project_heading_styles(root)
+    changed += ensure_list_styles(root)
 
     for style in root.findall(f"{{{WORD_NS}}}style"):
         style_id = style.get(STYLE_ID)

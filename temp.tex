@@ -121,6 +121,8 @@
 图\ref{fig:vector-format-test-pdf}和图\ref{fig:vector-format-test-png}展示了普通图片环境，它们分别插入同一图片的PDF和PNG格式，用于检查LaTeX编译和Pandoc转Word时不同图片格式的兼容性。为了便于Pandoc识别，建议每个图片只保留一个\verb|\caption|，不要使用双语图题计数器回退等复杂写法。注意，Word不支持PDF格式的图片，因此脚本在处理时先将pdf导出成了PNG格式。 Figure \ref{fig:vector-format-test-pdf} and Figure \ref{fig:vector-format-test-png} show ordinary figure environments. They insert the same image in PDF and PNG formats to check compatibility during LaTeX compilation and Pandoc-to-Word conversion. To help Pandoc recognize figures, each figure should keep only one \verb|\caption| and avoid complex patterns such as bilingual caption counter rollback. Note that Word does not support PDF images, so the script first exports PDF images to PNG during processing.
 
 \begin{figure}[htbp]
+  % figure 内必须使用 \centering：\begin{center} 会让 Pandoc 将图片视为复杂 Figure，
+  % DOCX writer 随后以 FigureTable 输出，导致表格后处理误加三线表边框。
   \centering
   \includegraphics[width=0.65\linewidth]{example-fig-1.pdf}
   \caption{图片格式测试：PDF 矢量图 Figure format test: PDF vector image}
@@ -128,6 +130,8 @@
 \end{figure}
 
 \begin{figure}[htbp]
+  % figure 内必须使用 \centering：\begin{center} 会让 Pandoc 将图片视为复杂 Figure，
+  % DOCX writer 随后以 FigureTable 输出，导致表格后处理误加三线表边框。
   \centering
   \includegraphics[width=0.65\linewidth]{example-fig-2.png}
   \caption{图片格式测试：PNG 位图 Figure format test: PNG bitmap image}
@@ -153,6 +157,20 @@
     \bottomrule
   \end{tabular}
 \end{table}
+
+\subsection{列表示例 List Example}
+\label{subsec:list}
+
+有序列表和项目符号列表应使用标准的\verb|enumerate|、\verb|itemize|与\verb|\item|结构。转换后的Word审阅稿会保留Pandoc原生编号，并分别应用项目定义的有序列表和项目符号列表样式。 Ordered and bullet lists should use the standard \verb|enumerate|, \verb|itemize|, and \verb|\item| structure. The converted Word review draft keeps Pandoc native numbering and applies the project ordered-list and bullet-list styles.
+
+\begin{enumerate}
+  \item 第一项用于验证有序列表的编号、段落样式和换行缩进。 The first item verifies ordered-list numbering, paragraph styling, and wrapped-line indentation.
+  \item 第二项包含嵌套项目符号列表，用于验证多级列表的层级与样式边界。
+    \begin{itemize}
+      \item 嵌套项保留项目符号样式，并与父级编号保持清晰的缩进关系。 Nested items retain the bullet-list style and a clear indentation relationship with the parent number.
+      \item 第二个嵌套项用于检查相邻列表项的连续编号与换行表现。 The second nested item checks adjacent-item continuity and line wrapping.
+    \end{itemize}
+\end{enumerate}
 
 \subsection{综合引用示例 Combined Cross-Reference Example}
 \label{subsec:cross-reference}

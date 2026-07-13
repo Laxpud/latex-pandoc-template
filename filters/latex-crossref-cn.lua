@@ -19,6 +19,7 @@ local styles = {
   ordered_list = "LptOrderedList",
   bullet_list = "LptBulletList",
   figure_caption = "LptFigureCaption",
+  subfigure_caption = "LptSubfigureCaption",
   table_caption = "LptTableCaption",
   equation = "LptEquationNumbered",
   references_heading = "LptReferencesHeading",
@@ -608,6 +609,42 @@ local function styled_caption(caption, style_name)
   return caption
 end
 
+local style_figure_content_block
+
+style_figure_content_block = function(block)
+  if block.t == "Div" then
+    local styled = {}
+    for _, child in ipairs(block.content) do
+      table.insert(styled, style_figure_content_block(child))
+    end
+    block.content = styled
+    return block
+  end
+
+  if block.t == "Figure" then
+    -- 外层 figure 的内容中出现的 Figure 就是 subfigure。子图不参与主图编号，
+    -- 这里只标记子图题；图片段落样式由 DOCX 后处理统一设置，避免改变 Pandoc 的布局结构。
+    block.caption = styled_caption(block.caption, styles.subfigure_caption)
+    local styled = {}
+    for _, child in ipairs(block.content) do
+      table.insert(styled, style_figure_content_block(child))
+    end
+    block.content = styled
+    return block
+  end
+
+  return block
+end
+
+local function style_figure_content(figure)
+  local styled = {}
+  for _, block in ipairs(figure.content) do
+    table.insert(styled, style_figure_content_block(block))
+  end
+  figure.content = styled
+  return figure
+end
+
 local function prefix_caption(caption, prefix)
   local blocks = caption_blocks(caption)
   if #blocks == 0 then
@@ -794,9 +831,12 @@ local function rewrite_blocks(blocks)
   for _, block in ipairs(blocks) do
     if is_equation_image_div(block) and refs[block.identifier] then
       table.insert(rewritten, equation_image_paragraph(block, refs[block.identifier]))
-    elseif block.t == "Figure" and block.identifier and refs[block.identifier] then
-      block.caption = prefix_caption(block.caption, "图 " .. refs[block.identifier])
+    elseif block.t == "Figure" then
+      if block.identifier and refs[block.identifier] then
+        block.caption = prefix_caption(block.caption, "图 " .. refs[block.identifier])
+      end
       block.caption = styled_caption(block.caption, styles.figure_caption)
+      block = style_figure_content(block)
       table.insert(rewritten, block)
     elseif block.t == "Div" and block.identifier and block.identifier:match("^tab:") then
       block = block:walk({

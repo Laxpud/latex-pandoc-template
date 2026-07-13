@@ -2,7 +2,8 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$DocxFile,
     [string]$HeaderStyle = "LptTableHeader",
-    [string]$BodyStyle = "LptTableBody"
+    [string]$BodyStyle = "LptTableBody",
+    [string]$FigureStyle = "LptFigure"
 )
 
 $ErrorActionPreference = "Stop"
@@ -183,6 +184,19 @@ try {
 
     $Tables = $Xml.SelectNodes("//w:tbl", $Ns)
     foreach ($Table in $Tables) {
+        # Pandoc 会用 FigureTable 承载 subfigure 等复合图片布局。该表格只负责排列图片与题注，
+        # 不属于论文数据表；若继续执行三线表和段落样式处理，图片外侧就会出现可见边框，
+        # 同时原有的 CaptionedFigure / ImageCaption 样式也会被表头样式覆盖。
+        $TableStyle = $Table.SelectSingleNode("./w:tblPr/w:tblStyle", $Ns)
+        $TableStyleId = if ($TableStyle) {
+            $TableStyle.GetAttribute("val", $WordNs)
+        } else {
+            ""
+        }
+
+        if ($TableStyleId -eq "FigureTable") {
+            continue
+        }
         Set-TableAutoFitAndCenter -Table $Table -Document $Xml
         Set-ThreeLineTableBorders -Table $Table -Document $Xml
 
@@ -200,6 +214,22 @@ try {
         }
     }
 
+    # Pandoc 会根据 Figure 的复杂程度选择 CaptionedFigure、Compact 等默认段落样式。
+    # 这里在 DOCX 结构已经确定后统一图片段落，既覆盖普通 figure、center 和 subfigure，
+    # 又不会因 AST 包装而额外生成 FigureTable。公式图片保留专用的编号公式样式。
+    $ImageParagraphs = $Xml.SelectNodes("//w:p[.//w:drawing]", $Ns)
+    foreach ($Paragraph in $ImageParagraphs) {
+        $ParagraphStyle = $Paragraph.SelectSingleNode("./w:pPr/w:pStyle", $Ns)
+        $ParagraphStyleId = if ($ParagraphStyle) {
+            $ParagraphStyle.GetAttribute("val", $WordNs)
+        } else {
+            ""
+        }
+
+        if ($ParagraphStyleId -ne "LptEquationNumbered") {
+            Set-ParagraphStyle -Paragraph $Paragraph -StyleName $FigureStyle -Document $Xml
+        }
+    }
     $Entry.Delete()
     $NewEntry = $Zip.CreateEntry("word/document.xml")
     $Writer = [System.IO.StreamWriter]::new($NewEntry.Open())

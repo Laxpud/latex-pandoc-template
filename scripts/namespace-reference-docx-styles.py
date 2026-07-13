@@ -44,7 +44,11 @@ STYLE_ID_MAP = {
     "TableBody": "LptTableBody",
 }
 INVERSE_STYLE_ID_MAP = {value: key for key, value in STYLE_ID_MAP.items()}
-PROJECT_STYLE_IDS = set(STYLE_ID_MAP.values())
+FIGURE_STYLE_SOURCES = {
+    "LptFigure": "CaptionedFigure",
+    "LptSubfigureCaption": "ImageCaption",
+}
+PROJECT_STYLE_IDS = set(STYLE_ID_MAP.values()) | set(FIGURE_STYLE_SOURCES)
 HEADING_NUMBERING_ABSTRACT_NUM_ID = "99"
 HEADING_NUMBERING_NUM_ID = "99"
 HEADING_NUMBERING_LEVELS = (
@@ -350,6 +354,30 @@ def insert_project_heading_styles(root: ET.Element) -> int:
     return changed
 
 
+def ensure_figure_styles(root: ET.Element) -> int:
+    """从 Pandoc 默认图片样式创建可由项目稳定引用的图片样式。"""
+
+    changed = 0
+    for target_id, source_id in FIGURE_STYLE_SOURCES.items():
+        target_style = root.find(f"{qn('style')}[@{STYLE_ID}='{target_id}']")
+        if target_style is not None:
+            continue
+
+        source_style = root.find(f"{qn('style')}[@{STYLE_ID}='{source_id}']")
+        if source_style is None:
+            continue
+
+        target_style = ET.fromstring(ET.tostring(source_style, encoding="utf-8"))
+        target_style.set(STYLE_ID, target_id)
+        target_style.set(qn("type"), "paragraph")
+        target_style.set(qn("customStyle"), "1")
+        set_child_val(target_style, "name", target_id)
+        root.append(target_style)
+        changed += 1
+
+    return changed
+
+
 def ensure_list_styles(root: ET.Element) -> int:
     """确保列表项样式继承正文外观，但不接管 Pandoc 的编号定义。"""
 
@@ -432,6 +460,7 @@ def restore_builtin_style_refs(style: ET.Element) -> int:
 def rewrite_styles_xml(root: ET.Element) -> int:
     changed = remove_duplicate_styles(root)
     changed += insert_project_heading_styles(root)
+    changed += ensure_figure_styles(root)
     changed += ensure_list_styles(root)
 
     for style in root.findall(f"{{{WORD_NS}}}style"):

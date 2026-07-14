@@ -496,6 +496,7 @@ Lua filter 会在 Pandoc AST 层面为表头和表身单元格内容加样式：
 - 在缺少 `LptHeading1`、`LptHeading2`、`LptHeading3` 时，从 `Heading1`、`Heading2`、`Heading3` 复制项目标题样式。
 - 为项目标题样式绑定多级编号。
 - 确保 `word/numbering.xml` 中存在项目标题编号定义。
+- 写回 DOCX 前校验编号节点顺序、ID 唯一性以及样式和正文中的编号引用。
 - 清理重复 style ID。
 - 将非项目样式中的 `Lpt...` 引用恢复为内置样式引用，避免污染 Word 内置样式。
 - 修正 `LptBodyText` 与正文基准样式之间的关系。
@@ -504,10 +505,7 @@ Lua filter 会在 Pandoc AST 层面为表头和表身单元格内容加样式：
 
 通用样式 ID 映射集中在 `STYLE_ID_MAP`，图片样式来源集中在 `FIGURE_STYLE_SOURCES`。维护样式时应优先修改这两处定义，而不是在多个脚本中散落新增样式名。
 
-标题编号使用固定编号 ID：
-
-- `abstractNumId = 99`
-- `numId = 99`
+标题编号不依赖固定的内部 ID。脚本通过编号级别中的 `LptHeading1`、`LptHeading2`、`LptHeading3` 绑定识别项目标题编号，优先复用 Word 实际保存的 `numId`；定义缺失时，分别为 `abstractNumId` 和 `numId` 分配未占用的正整数。新增 `abstractNum` 必须位于所有 `num` 节点之前，避免 Word 打开文档时修复并删除列表属性。
 
 三级标题编号格式为：
 
@@ -515,7 +513,7 @@ Lua filter 会在 Pandoc AST 层面为表头和表身单元格内容加样式：
 - 二级：`%1.%2`
 - 三级：`%1.%2.%3`
 
-标题缩进由脚本写入 `word/numbering.xml`。如果在 Word 中手工调整编号样式后又运行该脚本，脚本会按当前规则重新写入项目标题编号关系。
+标题缩进由脚本写入 `word/numbering.xml`。Word 可能在另存时重新分配编号 ID；再次运行脚本时会复用语义匹配的标题编号，只重写项目的三级标题规则，不覆盖碰巧使用相同数字 ID 的其他列表。
 
 ## 维护与排错
 

@@ -587,7 +587,8 @@ local function ref_kind(id)
 end
 
 local function starts_with_caption(caption_text, prefix)
-  return caption_text == prefix or caption_text:match("^" .. prefix .. "%s")
+  return caption_text == prefix or
+    caption_text:sub(1, #prefix + 1) == prefix .. " "
 end
 
 local function caption_blocks(caption)
@@ -609,25 +610,42 @@ local function styled_caption(caption, style_name)
   return caption
 end
 
+local prefix_caption
 local style_figure_content_block
 
-style_figure_content_block = function(block)
+local function alphabetic_subfigure_label(index)
+  -- 子图编号采用 LaTeX subcaption 的小写字母序列：a..z, aa..az。
+  local chars = {}
+  local value = index
+
+  repeat
+    value = value - 1
+    table.insert(chars, 1, string.char(97 + (value % 26)))
+    value = math.floor(value / 26)
+  until value == 0
+
+  return table.concat(chars)
+end
+
+style_figure_content_block = function(block, state)
   if block.t == "Div" then
     local styled = {}
     for _, child in ipairs(block.content) do
-      table.insert(styled, style_figure_content_block(child))
+      table.insert(styled, style_figure_content_block(child, state))
     end
     block.content = styled
     return block
   end
 
   if block.t == "Figure" then
-    -- 外层 figure 的内容中出现的 Figure 就是 subfigure。子图不参与主图编号，
-    -- 这里只标记子图题；图片段落样式由 DOCX 后处理统一设置，避免改变 Pandoc 的布局结构。
+    -- Pandoc 不会把 subcaption 自动生成的 (a)(b) 写入 AST，因此项目在每个
+    -- 外层 Figure 内按出现顺序补齐编号；子图仍不参与主图计数。
+    state.index = state.index + 1
+    block.caption = prefix_caption(block.caption, "(" .. alphabetic_subfigure_label(state.index) .. ")")
     block.caption = styled_caption(block.caption, styles.subfigure_caption)
     local styled = {}
     for _, child in ipairs(block.content) do
-      table.insert(styled, style_figure_content_block(child))
+      table.insert(styled, style_figure_content_block(child, state))
     end
     block.content = styled
     return block
@@ -638,14 +656,15 @@ end
 
 local function style_figure_content(figure)
   local styled = {}
+  local state = { index = 0 }
   for _, block in ipairs(figure.content) do
-    table.insert(styled, style_figure_content_block(block))
+    table.insert(styled, style_figure_content_block(block, state))
   end
   figure.content = styled
   return figure
 end
 
-local function prefix_caption(caption, prefix)
+prefix_caption = function(caption, prefix)
   local blocks = caption_blocks(caption)
   if #blocks == 0 then
     caption.long = { pandoc.Plain({ pandoc.Str(prefix) }) }

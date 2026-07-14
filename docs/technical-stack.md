@@ -359,7 +359,7 @@ filter 先遍历文档块收集编号：
 随后重写正文块：
 
 - 主图 caption 自动加 `图 N` 前缀，并使用 `LptFigureCaption`。
-- 递归识别主图内容中的 `subfigure`；子图 caption 不参与主图编号，使用 `LptSubfigureCaption`。
+- 递归识别主图内容中的 `subfigure`；每个主图内按出现顺序为子图题补充 `(a)`、`(b)` 等编号，子图不参与主图编号，并使用 `LptSubfigureCaption`。
 - 图片段落不在 AST 层包装，避免触发额外 `FigureTable`；Pandoc 写完 DOCX 后再统一应用 `LptFigure`。
 - 表格 caption 自动加 `表 N` 前缀，并使用 `LptTableCaption`。
 - 带 label 的显示公式会改写为带左右 tab 和 `(N)` 的段落，并使用 `LptEquationNumbered`。
@@ -479,7 +479,7 @@ Lua filter 会在 Pandoc AST 层面为表头和表身单元格内容加样式：
 图片布局表处理：
 
 - figure 内的 `center` 块可能被 DOCX writer 写成单单元格 `FigureTable`；多个 `subfigure` 会形成多单元格 `FigureTable`，用于横向排列子图。
-- `FigureTable` 只承载图片与题注，不是论文数据表；表格处理会跳过其布局和边框，随后统一图片段落为 `LptFigure`；Lua filter 只负责把子图题标记为 `LptSubfigureCaption`。
+- `FigureTable` 只承载图片与题注，不是论文数据表；表格处理会跳过其布局和边框，随后统一图片段落为 `LptFigure`；Lua filter 为子图题补充字母编号并标记为 `LptSubfigureCaption`。
 - `\FloatBarrier` 只约束 LaTeX/PDF 浮动体位置，不参与 Pandoc 的 Word 图片布局。
 - 识别依据使用 Pandoc 明确写入的表格样式，而不是根据图片数量或单元格结构猜测，避免误伤正文中包含图片的数据表。
 

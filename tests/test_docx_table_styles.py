@@ -290,8 +290,8 @@ class DocxTableStylesTests(unittest.TestCase):
         ]
         self.assertEqual(len(figure_tables), 2)
         self.assertEqual(image_styles, ["LptFigure"] * 4)
-        self.assertEqual(caption_styles.get("First subfigure"), "LptSubfigureCaption")
-        self.assertEqual(caption_styles.get("Second subfigure"), "LptSubfigureCaption")
+        self.assertEqual(caption_styles.get("(a) First subfigure"), "LptSubfigureCaption")
+        self.assertEqual(caption_styles.get("(b) Second subfigure"), "LptSubfigureCaption")
         self.assertEqual(caption_styles.get("图 1 Ordinary figure"), "LptFigureCaption")
         self.assertEqual(caption_styles.get("图 2 Centered figure"), "LptFigureCaption")
         self.assertEqual(caption_styles.get("图 3 Combined figure"), "LptFigureCaption")

@@ -79,9 +79,9 @@ uv sync
 
 - `convert-docx.ps1`：项目推荐的 Word 转换快捷入口。它固定使用当前项目文件名，把 `temp.tex` 转换为 `temp.docx`。
 - `scripts/tex-to-docx.ps1`：Word 转换主脚本，负责串联兼容预处理、图片预处理、Pandoc、表格后处理和样式规范化。
-- `scripts/prepare-pandoc-compat.py`：兼容预处理脚本，展开少量常用宏；公式 SVG 渲染分支保留在脚本中但当前默认关闭。
+- `scripts/prepare-pandoc-compat.py`：兼容预处理脚本，展开少量常用宏，并为简单相对宽度子图保留 DOCX 布局信息；公式 SVG 渲染分支保留在脚本中但当前默认关闭。
 - `scripts/prepare-pandoc-images.py`：图片预处理脚本，把 LaTeX 中引用的 PDF 图片渲染为 PNG，并写入 Pandoc 临时输入文件。
-- `scripts/apply-docx-table-styles.ps1`：DOCX 表格与图片段落后处理脚本，直接修改 `word/document.xml`，为正文数据表补充三线表样式、跳过 Pandoc 图片布局表，并统一图片段落样式。
+- `scripts/apply-docx-table-styles.ps1`：DOCX 表格与图片段落后处理脚本，直接修改 `word/document.xml`，为正文数据表补充三线表样式、按子图宽度重排 Pandoc 图片布局表，并统一图片段落样式。
 - `scripts/namespace-reference-docx-styles.py`：样式规范化脚本，维护 `Lpt...` 样式 ID、标题编号和文档内样式引用。
 - `filters/latex-crossref-cn.lua`：Pandoc Lua filter，负责中文图表题、公式编号、交叉引用、front matter、参考文献和 Word 段落样式。
 
@@ -251,6 +251,10 @@ Pandoc 核心参数包括：
 - 将常用 `siunitx` 写法 `\SI`、`\SIrange`、`\si` 和 `\ang` 展开为普通文本。
 - 将 `\bm{...}` 改写为 `\boldsymbol{...}`，便于 Pandoc 与 Word 原生公式路径继续识别粗体符号。
 - 保留实验性的编号公式 SVG 渲染代码，但 `prepare_tex_text()` 当前注释掉了该调用，默认仍让带 `\label{eq:...}` 的 `equation` 环境走 Pandoc 与 Word 原生公式路径。
+- 识别 `subfigure` 的简单相对宽度（例如 `0.48\linewidth`、`.32\textwidth`），并把宽度暂存到 Pandoc 专用输入的图片 alt 属性；该内部标记不会修改原始 TeX，DOCX 后处理使用后会将其删除。
+
+子图宽度只解析“数字系数 + `\linewidth` / `\textwidth` / `\columnwidth`”这一窄子集。`\dimexpr`、绝对单位和其他算术表达式不会被猜测，遇到这些写法时保留 Pandoc 原始布局。
+
 
 生成的中间文件和缓存分别位于：
 
@@ -479,7 +483,9 @@ Lua filter 会在 Pandoc AST 层面为表头和表身单元格内容加样式：
 图片布局表处理：
 
 - figure 内的 `center` 块可能被 DOCX writer 写成单单元格 `FigureTable`；多个 `subfigure` 会形成多单元格 `FigureTable`，用于横向排列子图。
-- `FigureTable` 只承载图片与题注，不是论文数据表；表格处理会跳过其布局和边框，随后统一图片段落为 `LptFigure`；Lua filter 为子图题补充字母编号并标记为 `LptSubfigureCaption`。
+- Pandoc 本身会丢失 `subfigure` 容器宽度并把所有子图压在同一行。兼容预处理保留简单相对宽度后，DOCX 后处理按出现顺序累计宽度；加入下一子图会超过 `1.0` 时新建一行，并同步恢复图片在新单元格中的尺寸。例如四个 `0.48\linewidth` 子图会得到两行两列。
+- 重排后的各行共享一个合法的 Word 表格网格；不同列数的行通过 `gridSpan` 跨列，图片说明中的内部宽度标记会被清除，用户已有的 alt 文本会保留。
+- `FigureTable` 只承载图片与题注，不是论文数据表；表格处理不会为其应用三线表边框，随后统一图片段落为 `LptFigure`；Lua filter 为子图题补充字母编号并标记为 `LptSubfigureCaption`。
 - `\FloatBarrier` 只约束 LaTeX/PDF 浮动体位置，不参与 Pandoc 的 Word 图片布局。
 - 识别依据使用 Pandoc 明确写入的表格样式，而不是根据图片数量或单元格结构猜测，避免误伤正文中包含图片的数据表。
 

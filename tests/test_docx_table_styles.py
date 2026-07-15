@@ -14,8 +14,11 @@ FILTER_PATH = ROOT / "filters" / "latex-crossref-cn.lua"
 REFERENCE_DOCX = ROOT / "reference.docx"
 STYLE_NORMALIZER_PATH = ROOT / "scripts" / "namespace-reference-docx-styles.py"
 TABLE_STYLE_SCRIPT = ROOT / "scripts" / "apply-docx-table-styles.ps1"
+COMPAT_PREP_SCRIPT = ROOT / "scripts" / "prepare-pandoc-compat.py"
 WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+WP_NS = "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
 VAL = f"{{{WORD_NS}}}val"
+WIDTH = f"{{{WORD_NS}}}w"
 
 
 def find_powershell() -> str | None:
@@ -74,6 +77,138 @@ def paragraph_styles(table: ET.Element) -> set[str]:
 
 
 class DocxTableStylesTests(unittest.TestCase):
+    def test_four_relative_width_subfigures_wrap_into_two_docx_rows(self):
+        powershell = find_powershell()
+        if powershell is None:
+            self.skipTest("PowerShell is required to test DOCX table post-processing")
+
+        image_path = FIGURE_PATH.as_posix()
+        subfigures = "\n".join(
+            rf"""
+  \begin{{subfigure}}[t]{{0.48\linewidth}}
+    \centering
+    \includegraphics[width=\linewidth,alt={{Accessible subfigure {index}}}]{{{image_path}}}
+    \caption{{Subfigure {index}}}
+  \end{{subfigure}}
+  \hfill
+"""
+            for index in range(1, 5)
+        )
+        tex = rf"""
+\documentclass{{article}}
+\usepackage{{graphicx}}
+\usepackage{{subcaption}}
+\begin{{document}}
+\begin{{figure}}[htbp]
+  \centering
+{subfigures}
+  \caption{{Four subfigures}}
+\end{{figure}}
+\end{{document}}
+"""
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            input_tex = temp_path / "four-subfigures.tex"
+            compat_tex = temp_path / "four-subfigures-compat.tex"
+            equation_cache = temp_path / "equations"
+            output_docx = temp_path / "four-subfigures.docx"
+            input_tex.write_text(tex, encoding="utf-8")
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    str(COMPAT_PREP_SCRIPT),
+                    "--input",
+                    str(input_tex),
+                    "--output",
+                    str(compat_tex),
+                    "--equation-cache-dir",
+                    str(equation_cache),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            subprocess.run(
+                [
+                    "pandoc",
+                    str(compat_tex),
+                    "-o",
+                    str(output_docx),
+                    f"--lua-filter={FILTER_PATH}",
+                    f"--reference-doc={REFERENCE_DOCX}",
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            subprocess.run(
+                [
+                    powershell,
+                    "-NoProfile",
+                    "-File",
+                    str(TABLE_STYLE_SCRIPT),
+                    "-DocxFile",
+                    str(output_docx),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            tables = read_tables(output_docx)
+            paragraphs = read_paragraphs(output_docx)
+
+        figure_tables = [
+            table for table in tables if table_style(table) == "FigureTable"
+        ]
+        self.assertEqual(len(figure_tables), 1)
+        rows = figure_tables[0].findall(f"{{{WORD_NS}}}tr")
+        self.assertEqual(
+            [len(row.findall(f"{{{WORD_NS}}}tc")) for row in rows],
+            [2, 2],
+        )
+        self.assertNotIn(
+            "LPTSUBFIGWIDTH:",
+            "".join(paragraph_text(paragraph) for paragraph in paragraphs),
+        )
+        descriptions = [
+            drawing.get("descr", "")
+            for drawing in figure_tables[0].findall(f".//{{{WP_NS}}}docPr")
+        ]
+        self.assertEqual(
+            descriptions,
+            [f"Accessible subfigure {index}" for index in range(1, 5)],
+        )
+        self.assertNotIn("LPTSUBFIGWIDTH:", "".join(descriptions))
+
+        captions = {
+            paragraph_text(paragraph): paragraph_style(paragraph)
+            for paragraph in paragraphs
+            if paragraph_text(paragraph)
+        }
+        for index, label in enumerate(("a", "b", "c", "d"), start=1):
+            self.assertEqual(
+                captions.get(f"({label}) Subfigure {index}"),
+                "LptSubfigureCaption",
+            )
+
+        grid_width = sum(
+            int(column.get(WIDTH, "0"))
+            for column in figure_tables[0].findall(
+                f"{{{WORD_NS}}}tblGrid/{{{WORD_NS}}}gridCol"
+            )
+        )
+        expected_image_width = round(grid_width * 0.48 * 635)
+        extents = figure_tables[0].findall(f".//{{{WP_NS}}}extent")
+        self.assertEqual(len(extents), 4)
+        for extent in extents:
+            self.assertAlmostEqual(
+                int(extent.get("cx", "0")),
+                expected_image_width,
+                delta=635,
+            )
+
     def test_figure_layout_table_is_ignored_but_data_table_is_styled(self):
         powershell = find_powershell()
         if powershell is None:

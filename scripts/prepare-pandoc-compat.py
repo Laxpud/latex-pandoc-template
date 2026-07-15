@@ -2,8 +2,9 @@
 """为 Pandoc 转换准备 LaTeX 兼容输入。
 
 这个脚本只覆盖当前模板需要的窄子集：常用 glossary 宏、常用
-siunitx 宏、`\bm`，以及带 `eq:` 标签的编号公式 SVG 化。它不是
-完整 LaTeX 解释器，遇到超出约定的复杂宏时会尽量保持原文。
+siunitx 宏、`\bm`、子图相对宽度标记，以及带 `eq:` 标签的编号公式
+SVG 化。它不是完整 LaTeX 解释器，遇到超出约定的复杂宏时会尽量
+保持原文。
 """
 
 from __future__ import annotations
@@ -53,6 +54,13 @@ EQUATION_RE = re.compile(
     re.DOTALL,
 )
 LABEL_RE = re.compile(r"\\label\s*\{\s*([^}]+)\s*\}")
+SUBFIGURE_BEGIN_RE = re.compile(r"\\begin\s*\{\s*subfigure\s*\}")
+SUBFIGURE_END_RE = re.compile(r"\\end\s*\{\s*subfigure\s*\}")
+INCLUDEGRAPHICS_RE = re.compile(r"\\includegraphics\b")
+RELATIVE_WIDTH_RE = re.compile(
+    r"^\s*(?P<factor>(?:\d+(?:\.\d*)?|\.\d+))?\s*"
+    r"\\(?P<base>line|text|column)width\s*$"
+)
 DEGREE_SIGN = "\N{DEGREE SIGN}"
 
 
@@ -124,6 +132,130 @@ def read_required_groups(text: str, index: int, count: int) -> tuple[list[str], 
         value, cursor = result
         groups.append(value)
     return groups, cursor
+
+
+def relative_width_factor(expression: str, allowed_bases: set[str]) -> float | None:
+    r"""解析项目支持的简单相对宽度，复杂长度表达式保持原样。
+
+    Pandoc 会丢失 `subfigure` 容器的宽度，因此这里只识别
+    `0.48\linewidth`、`.32\textwidth` 这一类无歧义写法。涉及
+    `\dimexpr`、绝对单位或算术运算时不猜测，DOCX 继续采用 Pandoc
+    的原始单行布局。
+    """
+
+    match = RELATIVE_WIDTH_RE.fullmatch(expression)
+    if not match or match.group("base") not in allowed_bases:
+        return None
+
+    factor_text = match.group("factor")
+    factor = float(factor_text) if factor_text else 1.0
+    if factor <= 0:
+        return None
+    return factor
+
+
+def format_width_factor(value: float) -> str:
+    return f"{value:.12g}"
+
+
+def image_width_from_options(options: str) -> float | None:
+    width_match = re.search(r"(?:^|,)\s*width\s*=\s*([^,]+)", options)
+    if not width_match:
+        return None
+
+    # subfigure 内的 \linewidth 指当前子图盒子；\textwidth 仍指整页，
+    # 两者不能使用同一倍率解释，因此这里只接受前者。
+    return relative_width_factor(width_match.group(1), {"line"})
+
+
+def options_with_layout_marker(options: str, marker: str) -> str:
+    """把内部布局标记附加到图片 alt，保留用户已有的替代文本。"""
+
+    alt_match = re.search(r"(?:^|,)\s*alt\s*=\s*\{", options)
+    if alt_match:
+        group_start = options.find("{", alt_match.start())
+        parsed = read_group(options, group_start)
+        if parsed:
+            alt_text, group_end = parsed
+            separator = " | " if alt_text.strip() else ""
+            return (
+                options[: group_start + 1]
+                + alt_text
+                + separator
+                + marker
+                + options[group_end - 1 :]
+            )
+
+    separator = "," if options.strip() else ""
+    return options + separator + f"alt={{{marker}}}"
+
+
+def annotate_subfigure_widths(text: str) -> str:
+    """向 Pandoc 专用输入加入稍后会从 DOCX 删除的子图布局标记。
+
+    标记暂存于首张图片的 alt 属性，不新增段落或 Figure，因而不会改变
+    Pandoc 的图片表格结构。Word 后处理据此按累计宽度拆行，并在完成后
+    从 OOXML 图片说明中删除标记；原始 TeX 与 PDF 编译路径不受影响。
+    """
+
+    edits: list[tuple[int, int, str]] = []
+
+    for match in SUBFIGURE_BEGIN_RE.finditer(text):
+        _, width_cursor = read_optional_group(text, match.end())
+        parsed = read_required_groups(text, width_cursor, 1)
+        if not parsed:
+            continue
+        groups, begin_content = parsed
+        subfigure_width = relative_width_factor(
+            groups[0],
+            {"line", "text", "column"},
+        )
+        if subfigure_width is None:
+            continue
+
+        end_match = SUBFIGURE_END_RE.search(text, begin_content)
+        if not end_match:
+            continue
+        content = text[begin_content : end_match.start()]
+        if "LPTSUBFIGWIDTH:" in content:
+            continue
+        image_match = INCLUDEGRAPHICS_RE.search(content)
+        if not image_match:
+            continue
+
+        image_command_end = begin_content + image_match.end()
+        options_start = skip_space(text, image_command_end)
+        options = ""
+        options_end = options_start
+        has_options = options_start < len(text) and text[options_start] == "["
+        if has_options:
+            parsed_options = read_group(text, options_start, "[", "]")
+            if not parsed_options:
+                continue
+            options, options_end = parsed_options
+
+        marker = "LPTSUBFIGWIDTH:" + format_width_factor(subfigure_width)
+        image_width = image_width_from_options(options)
+        if image_width is not None:
+            marker += ";LPTIMAGEWIDTH:" + format_width_factor(image_width)
+
+        if has_options:
+            replacement = "[" + options_with_layout_marker(options, marker) + "]"
+            edits.append((options_start, options_end, replacement))
+        else:
+            edits.append((image_command_end, image_command_end, f"[alt={{{marker}}}]"))
+
+    if not edits:
+        return text
+
+    output: list[str] = []
+    cursor = 0
+    for start, end, replacement in edits:
+        output.append(text[cursor:start])
+        output.append(replacement)
+        cursor = end
+    output.append(text[cursor:])
+    return "".join(output)
 
 
 def latex_to_plain(text: str) -> str:
@@ -474,6 +606,7 @@ def prepare_tex_text(
     text = expand_glossaries(text, acronyms, symbols)
     text = expand_siunitx(text)
     text = replace_bm(text)
+    text = annotate_subfigure_widths(text)
     rendered_count = 0
     # 暂时关闭编号公式 SVG 化，回退到 Pandoc/Word 原生公式路径，便于比较
     # SVG 图片基线和公式编号纵向对齐问题。恢复 SVG 路径时取消下面几行注释。

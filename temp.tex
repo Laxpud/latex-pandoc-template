@@ -120,7 +120,7 @@
 \subsection{图片示例 Figure Examples}
 \label{subsec:figure}
 
-图\ref{fig:vector-format-test-pdf}使用\verb|\centering|展示推荐的普通图片写法；图\ref{fig:vector-format-test-png}刻意使用\verb|center|环境复现单图的布局表边界；图\ref{fig:subfigure-layout-test}包含两个带子标题的\verb|subfigure|，用于验证复合图片布局。Word不支持PDF格式的图片，因此脚本会先把PDF图片渲染为PNG。 Figure \ref{fig:vector-format-test-pdf} uses the recommended \verb|\centering| form, Figure \ref{fig:vector-format-test-png} intentionally exercises the \verb|center| edge case, and Figure \ref{fig:subfigure-layout-test} verifies two captioned subfigures. PDF figures are rendered to PNG before DOCX conversion.
+图\ref{fig:vector-format-test-pdf}使用\verb|\centering|展示推荐的普通图片写法；图\ref{fig:vector-format-test-png}刻意使用\verb|center|环境复现单图的布局表边界；图\ref{fig:subfigure-layout-test}包含四个带子标题的\verb|subfigure|，用于验证依据子图宽度自动换行的复合图片布局。Word不支持PDF格式的图片，因此脚本会先把PDF图片渲染为PNG。 Figure \ref{fig:vector-format-test-pdf} uses the recommended \verb|\centering| form, Figure \ref{fig:vector-format-test-png} intentionally exercises the \verb|center| edge case, and Figure \ref{fig:subfigure-layout-test} verifies automatic wrapping of four captioned subfigures according to their declared widths. PDF figures are rendered to PNG before DOCX conversion.
 
 \begin{figure}[htbp]
   % 推荐写法：\centering 保持图片环境简单；项目转 Word 时会为图片段落应用 LptFigure，
@@ -144,8 +144,9 @@
 \begin{figure}[htbp]
   \centering
 
-  % subfigure 转 Word 时会保留为横向双图布局；项目会自动保持布局表无边框，
-  % 为图片段落应用 LptFigure，并为子图题自动补齐 (a)、(b) 编号后应用 LptSubfigureCaption。
+  % 这里连续放置四个 0.48\linewidth 子图；LaTeX/PDF 与项目的 Word 转换都会按宽度排成两行。
+  % 转换会自动保持图片布局表无边框，为图片段落应用 LptFigure，并为四个子图题依次补齐
+  % (a) 至 (d) 编号后应用 LptSubfigureCaption，用户不需要添加 Word 专用换行命令。
   \begin{subfigure}[t]{0.48\linewidth}
     \centering
     \includegraphics[width=\linewidth]{example-fig-1.pdf}
@@ -159,8 +160,23 @@
     \caption{PNG 位图子图 PNG bitmap subfigure}
     \label{fig:subfigure-layout-right}
   \end{subfigure}
+  \hfill
+  \begin{subfigure}[t]{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{example-fig-1.pdf}
+    \caption{第二个 PDF 矢量子图 Second PDF vector subfigure}
+    \label{fig:subfigure-layout-bottom-left}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[t]{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{example-fig-2.png}
+    \caption{第二个 PNG 位图子图 Second PNG bitmap subfigure}
+    \label{fig:subfigure-layout-bottom-right}
+  \end{subfigure}
 
-  \caption{带子标题的复合图片布局边界测试 Captioned subfigure layout edge case}
+
+  \caption{四子图自动换行布局边界测试 Four-subfigure automatic wrapping edge case}
   \label{fig:subfigure-layout-test}
 \end{figure}
 

@@ -19,6 +19,7 @@ local styles = {
   ordered_list = "LptOrderedList",
   bullet_list = "LptBulletList",
   figure_caption = "LptFigureCaption",
+  subfigure_caption = "LptSubfigureCaption",
   table_caption = "LptTableCaption",
   equation = "LptEquationNumbered",
   references_heading = "LptReferencesHeading",
@@ -586,7 +587,8 @@ local function ref_kind(id)
 end
 
 local function starts_with_caption(caption_text, prefix)
-  return caption_text == prefix or caption_text:match("^" .. prefix .. "%s")
+  return caption_text == prefix or
+    caption_text:sub(1, #prefix + 1) == prefix .. " "
 end
 
 local function caption_blocks(caption)
@@ -608,7 +610,61 @@ local function styled_caption(caption, style_name)
   return caption
 end
 
-local function prefix_caption(caption, prefix)
+local prefix_caption
+local style_figure_content_block
+
+local function alphabetic_subfigure_label(index)
+  -- 子图编号采用 LaTeX subcaption 的小写字母序列：a..z, aa..az。
+  local chars = {}
+  local value = index
+
+  repeat
+    value = value - 1
+    table.insert(chars, 1, string.char(97 + (value % 26)))
+    value = math.floor(value / 26)
+  until value == 0
+
+  return table.concat(chars)
+end
+
+style_figure_content_block = function(block, state)
+  if block.t == "Div" then
+    local styled = {}
+    for _, child in ipairs(block.content) do
+      table.insert(styled, style_figure_content_block(child, state))
+    end
+    block.content = styled
+    return block
+  end
+
+  if block.t == "Figure" then
+    -- Pandoc 不会把 subcaption 自动生成的 (a)(b) 写入 AST，因此项目在每个
+    -- 外层 Figure 内按出现顺序补齐编号；子图仍不参与主图计数。
+    state.index = state.index + 1
+    block.caption = prefix_caption(block.caption, "(" .. alphabetic_subfigure_label(state.index) .. ")")
+    block.caption = styled_caption(block.caption, styles.subfigure_caption)
+    local styled = {}
+    for _, child in ipairs(block.content) do
+      table.insert(styled, style_figure_content_block(child, state))
+    end
+    block.content = styled
+    return block
+  end
+
+  return block
+end
+
+local function style_figure_content(figure)
+  local styled = {}
+  local state = { index = 0 }
+  for _, block in ipairs(figure.content) do
+    table.insert(styled, style_figure_content_block(block, state))
+  end
+  figure.content = styled
+  return figure
+end
+
+prefix_caption = function(caption, prefix)
   local blocks = caption_blocks(caption)
   if #blocks == 0 then
     caption.long = { pandoc.Plain({ pandoc.Str(prefix) }) }
@@ -794,9 +850,12 @@ local function rewrite_blocks(blocks)
   for _, block in ipairs(blocks) do
     if is_equation_image_div(block) and refs[block.identifier] then
       table.insert(rewritten, equation_image_paragraph(block, refs[block.identifier]))
-    elseif block.t == "Figure" and block.identifier and refs[block.identifier] then
-      block.caption = prefix_caption(block.caption, "图 " .. refs[block.identifier])
+    elseif block.t == "Figure" then
+      if block.identifier and refs[block.identifier] then
+        block.caption = prefix_caption(block.caption, "图 " .. refs[block.identifier])
+      end
       block.caption = styled_caption(block.caption, styles.figure_caption)
+      block = style_figure_content(block)
       table.insert(rewritten, block)
     elseif block.t == "Div" and block.identifier and block.identifier:match("^tab:") then
       block = block:walk({

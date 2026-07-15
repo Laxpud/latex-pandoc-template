@@ -79,9 +79,9 @@ uv sync
 
 - `convert-docx.ps1`：项目推荐的 Word 转换快捷入口。它固定使用当前项目文件名，把 `temp.tex` 转换为 `temp.docx`。
 - `scripts/tex-to-docx.ps1`：Word 转换主脚本，负责串联兼容预处理、图片预处理、Pandoc、表格后处理和样式规范化。
-- `scripts/prepare-pandoc-compat.py`：兼容预处理脚本，展开少量常用宏；公式 SVG 渲染分支保留在脚本中但当前默认关闭。
+- `scripts/prepare-pandoc-compat.py`：兼容预处理脚本，展开少量常用宏，并为简单相对宽度子图保留 DOCX 布局信息；公式 SVG 渲染分支保留在脚本中但当前默认关闭。
 - `scripts/prepare-pandoc-images.py`：图片预处理脚本，把 LaTeX 中引用的 PDF 图片渲染为 PNG，并写入 Pandoc 临时输入文件。
-- `scripts/apply-docx-table-styles.ps1`：DOCX 表格后处理脚本，直接修改 `word/document.xml`，补充三线表边框、居中、自适应宽度和表格段落样式。
+- `scripts/apply-docx-table-styles.ps1`：DOCX 表格与图片段落后处理脚本，直接修改 `word/document.xml`，为正文数据表补充三线表样式、按子图宽度重排 Pandoc 图片布局表，并统一图片段落样式。
 - `scripts/namespace-reference-docx-styles.py`：样式规范化脚本，维护 `Lpt...` 样式 ID、标题编号和文档内样式引用。
 - `filters/latex-crossref-cn.lua`：Pandoc Lua filter，负责中文图表题、公式编号、交叉引用、front matter、参考文献和 Word 段落样式。
 
@@ -113,6 +113,8 @@ uv sync
 - `booktabs`：三线表。
 - `natbib`：参考文献引用。
 - `graphicx`：图片插入。
+- `subcaption`：`subfigure` 子图环境和子标题。
+- `placeins`：提供 `\FloatBarrier`，用于约束 LaTeX/PDF 浮动体位置。
 - `geometry`：页面边距。
 
 图片搜索路径由以下命令指定：
@@ -249,6 +251,10 @@ Pandoc 核心参数包括：
 - 将常用 `siunitx` 写法 `\SI`、`\SIrange`、`\si` 和 `\ang` 展开为普通文本。
 - 将 `\bm{...}` 改写为 `\boldsymbol{...}`，便于 Pandoc 与 Word 原生公式路径继续识别粗体符号。
 - 保留实验性的编号公式 SVG 渲染代码，但 `prepare_tex_text()` 当前注释掉了该调用，默认仍让带 `\label{eq:...}` 的 `equation` 环境走 Pandoc 与 Word 原生公式路径。
+- 识别 `subfigure` 的简单相对宽度（例如 `0.48\linewidth`、`.32\textwidth`），并把宽度暂存到 Pandoc 专用输入的图片 alt 属性；该内部标记不会修改原始 TeX，DOCX 后处理使用后会将其删除。
+
+子图宽度只解析“数字系数 + `\linewidth` / `\textwidth` / `\columnwidth`”这一窄子集。`\dimexpr`、绝对单位和其他算术表达式不会被猜测，遇到这些写法时保留 Pandoc 原始布局。
+
 
 生成的中间文件和缓存分别位于：
 
@@ -356,7 +362,9 @@ filter 先遍历文档块收集编号：
 
 随后重写正文块：
 
-- 图片 caption 自动加 `图 N` 前缀，并使用 `LptFigureCaption`。
+- 主图 caption 自动加 `图 N` 前缀，并使用 `LptFigureCaption`。
+- 递归识别主图内容中的 `subfigure`；每个主图内按出现顺序为子图题补充 `(a)`、`(b)` 等编号，子图不参与主图编号，并使用 `LptSubfigureCaption`。
+- 图片段落不在 AST 层包装，避免触发额外 `FigureTable`；Pandoc 写完 DOCX 后再统一应用 `LptFigure`。
 - 表格 caption 自动加 `表 N` 前缀，并使用 `LptTableCaption`。
 - 带 label 的显示公式会改写为带左右 tab 和 `(N)` 的段落，并使用 `LptEquationNumbered`。
 
@@ -419,7 +427,9 @@ Lua filter 会在 Pandoc AST 层面为表头和表身单元格内容加样式：
 - `LptBodyText`：正文。
 - `LptOrderedList`：有序列表项；编号和层级由 Pandoc 原生列表定义控制。
 - `LptBulletList`：项目符号列表项；编号和层级由 Pandoc 原生列表定义控制。
-- `LptFigureCaption`：图题。
+- `LptFigure`：图片段落，统一继承 `Captioned Figure` 的居中与“与下段同页”行为。
+- `LptFigureCaption`：主图题。
+- `LptSubfigureCaption`：子图题，外观基于 Pandoc 的 `Image Caption`。
 - `LptTableCaption`：表题。
 - `LptEquationNumbered`：带编号公式。
 - `LptReferencesHeading`：参考文献标题。
@@ -434,7 +444,7 @@ Lua filter 会在 Pandoc AST 层面为表头和表身单元格内容加样式：
 - 使用 `Lpt...` 可以减少样式模板、Pandoc 输出和后处理脚本之间的冲突。
 - 后续维护时只要保持 `Lpt...` ID 稳定，就可以替换样式外观而不改变转换逻辑。
 
-## DOCX 表格后处理
+## DOCX 表格与图片段落后处理
 
 `scripts/apply-docx-table-styles.ps1` 会直接修改 DOCX 压缩包中的 `word/document.xml`。
 
@@ -442,8 +452,10 @@ Lua filter 会在 Pandoc AST 层面为表头和表身单元格内容加样式：
 
 - 打开目标 DOCX 到临时文件。
 - 读取 `word/document.xml`。
-- 遍历所有 `w:tbl`。
-- 修改表格属性、边框和单元格段落样式。
+- 遍历所有 `w:tbl`，先读取 `w:tblStyle` 判断表格用途。
+- 跳过 Pandoc 为复合图片生成的 `FigureTable` 布局表。
+- 修改其余正文表格的属性、边框和单元格段落样式。
+- 遍历包含 `w:drawing` 的图片段落，统一应用 `LptFigure`；带编号公式图片保留 `LptEquationNumbered`。
 - 写回 `word/document.xml`。
 - 用处理后的临时 DOCX 覆盖原输出文件。
 
@@ -466,6 +478,16 @@ Lua filter 会在 Pandoc AST 层面为表头和表身单元格内容加样式：
 - 第一行所有单元格段落使用 `LptTableHeader`。
 - 其余行所有单元格段落使用 `LptTableBody`。
 - 脚本参数允许覆盖表头和表身样式名，但项目默认使用上述两个样式。
+- `FigureStyle` 参数允许覆盖图片段落样式名，项目默认使用 `LptFigure`。
+
+图片布局表处理：
+
+- figure 内的 `center` 块可能被 DOCX writer 写成单单元格 `FigureTable`；多个 `subfigure` 会形成多单元格 `FigureTable`，用于横向排列子图。
+- Pandoc 本身会丢失 `subfigure` 容器宽度并把所有子图压在同一行。兼容预处理保留简单相对宽度后，DOCX 后处理按出现顺序累计宽度；加入下一子图会超过 `1.0` 时新建一行，并同步恢复图片在新单元格中的尺寸。例如四个 `0.48\linewidth` 子图会得到两行两列。
+- 重排后的各行共享一个合法的 Word 表格网格；不同列数的行通过 `gridSpan` 跨列，图片说明中的内部宽度标记会被清除，用户已有的 alt 文本会保留。
+- `FigureTable` 只承载图片与题注，不是论文数据表；表格处理不会为其应用三线表边框，随后统一图片段落为 `LptFigure`；Lua filter 为子图题补充字母编号并标记为 `LptSubfigureCaption`。
+- `\FloatBarrier` 只约束 LaTeX/PDF 浮动体位置，不参与 Pandoc 的 Word 图片布局。
+- 识别依据使用 Pandoc 明确写入的表格样式，而不是根据图片数量或单元格结构猜测，避免误伤正文中包含图片的数据表。
 
 这个脚本不修改 `word/styles.xml`，也不负责创建样式；样式必须存在于 `reference.docx` 或由样式规范化脚本维护。
 
@@ -480,17 +502,16 @@ Lua filter 会在 Pandoc AST 层面为表头和表身单元格内容加样式：
 - 在缺少 `LptHeading1`、`LptHeading2`、`LptHeading3` 时，从 `Heading1`、`Heading2`、`Heading3` 复制项目标题样式。
 - 为项目标题样式绑定多级编号。
 - 确保 `word/numbering.xml` 中存在项目标题编号定义。
+- 写回 DOCX 前校验编号节点顺序、ID 唯一性以及样式和正文中的编号引用。
 - 清理重复 style ID。
 - 将非项目样式中的 `Lpt...` 引用恢复为内置样式引用，避免污染 Word 内置样式。
 - 修正 `LptBodyText` 与正文基准样式之间的关系。
 - 确保 `LptOrderedList` 与 `LptBulletList` 存在，并清除正文首行缩进，避免与 Pandoc 列表缩进叠加。
+- 在缺少样式时，从 `CaptionedFigure` 和 `ImageCaption` 分别创建 `LptFigure` 与 `LptSubfigureCaption`，但不覆盖模板中已有的人工调整。
 
-样式 ID 映射集中在脚本中的 `STYLE_ID_MAP`。维护样式时应优先修改这张映射，而不是在多个脚本中散落新增样式名。
+通用样式 ID 映射集中在 `STYLE_ID_MAP`，图片样式来源集中在 `FIGURE_STYLE_SOURCES`。维护样式时应优先修改这两处定义，而不是在多个脚本中散落新增样式名。
 
-标题编号使用固定编号 ID：
-
-- `abstractNumId = 99`
-- `numId = 99`
+标题编号不依赖固定的内部 ID。脚本通过编号级别中的 `LptHeading1`、`LptHeading2`、`LptHeading3` 绑定识别项目标题编号，优先复用 Word 实际保存的 `numId`；定义缺失时，分别为 `abstractNumId` 和 `numId` 分配未占用的正整数。新增 `abstractNum` 必须位于所有 `num` 节点之前，避免 Word 打开文档时修复并删除列表属性。
 
 三级标题编号格式为：
 
@@ -498,7 +519,7 @@ Lua filter 会在 Pandoc AST 层面为表头和表身单元格内容加样式：
 - 二级：`%1.%2`
 - 三级：`%1.%2.%3`
 
-标题缩进由脚本写入 `word/numbering.xml`。如果在 Word 中手工调整编号样式后又运行该脚本，脚本会按当前规则重新写入项目标题编号关系。
+标题缩进由脚本写入 `word/numbering.xml`。Word 可能在另存时重新分配编号 ID；再次运行脚本时会复用语义匹配的标题编号，只重写项目的三级标题规则，不覆盖碰巧使用相同数字 ID 的其他列表。
 
 ## 维护与排错
 

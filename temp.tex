@@ -8,6 +8,8 @@
 \usepackage[symbols,acronym,nogroupskip,sort=none]{glossaries-extra}
 \usepackage[super,square,numbers,sort&compress]{natbib}
 \usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{placeins}
 \usepackage[margin=2.54cm]{geometry}
 
 \providecommand{\doi}[1]{\textrm{\detokenize{#1}}}
@@ -118,11 +120,11 @@
 \subsection{图片示例 Figure Examples}
 \label{subsec:figure}
 
-图\ref{fig:vector-format-test-pdf}和图\ref{fig:vector-format-test-png}展示了普通图片环境，它们分别插入同一图片的PDF和PNG格式，用于检查LaTeX编译和Pandoc转Word时不同图片格式的兼容性。为了便于Pandoc识别，建议每个图片只保留一个\verb|\caption|，不要使用双语图题计数器回退等复杂写法。注意，Word不支持PDF格式的图片，因此脚本在处理时先将pdf导出成了PNG格式。 Figure \ref{fig:vector-format-test-pdf} and Figure \ref{fig:vector-format-test-png} show ordinary figure environments. They insert the same image in PDF and PNG formats to check compatibility during LaTeX compilation and Pandoc-to-Word conversion. To help Pandoc recognize figures, each figure should keep only one \verb|\caption| and avoid complex patterns such as bilingual caption counter rollback. Note that Word does not support PDF images, so the script first exports PDF images to PNG during processing.
+图\ref{fig:vector-format-test-pdf}使用\verb|\centering|展示推荐的普通图片写法；图\ref{fig:vector-format-test-png}刻意使用\verb|center|环境复现单图的布局表边界；图\ref{fig:subfigure-layout-test}包含四个带子标题的\verb|subfigure|，用于验证依据子图宽度自动换行的复合图片布局。Word不支持PDF格式的图片，因此脚本会先把PDF图片渲染为PNG。 Figure \ref{fig:vector-format-test-pdf} uses the recommended \verb|\centering| form, Figure \ref{fig:vector-format-test-png} intentionally exercises the \verb|center| edge case, and Figure \ref{fig:subfigure-layout-test} verifies automatic wrapping of four captioned subfigures according to their declared widths. PDF figures are rendered to PNG before DOCX conversion.
 
 \begin{figure}[htbp]
-  % figure 内必须使用 \centering：\begin{center} 会让 Pandoc 将图片视为复杂 Figure，
-  % DOCX writer 随后以 FigureTable 输出，导致表格后处理误加三线表边框。
+  % 推荐写法：\centering 保持图片环境简单；项目转 Word 时会为图片段落应用 LptFigure，
+  % 统一图片的居中方式，并让图片与随后的图题保持相邻。
   \centering
   \includegraphics[width=0.65\linewidth]{example-fig-1.pdf}
   \caption{图片格式测试：PDF 矢量图 Figure format test: PDF vector image}
@@ -130,13 +132,56 @@
 \end{figure}
 
 \begin{figure}[htbp]
-  % figure 内必须使用 \centering：\begin{center} 会让 Pandoc 将图片视为复杂 Figure，
-  % DOCX writer 随后以 FigureTable 输出，导致表格后处理误加三线表边框。
-  \centering
-  \includegraphics[width=0.65\linewidth]{example-fig-2.png}
-  \caption{图片格式测试：PNG 位图 Figure format test: PNG bitmap image}
+  % 边界示例：center 转 Word 时会形成单单元格图片布局表；项目会自动保持该布局表无边框，
+  % 并为其中的图片段落应用 LptFigure，用户不需要额外处理。
+  \begin{center}
+    \includegraphics[width=0.65\linewidth]{example-fig-2.png}
+  \end{center}
+  \caption{图片居中边界测试：center 环境 Figure centering edge case: center environment}
   \label{fig:vector-format-test-png}
 \end{figure}
+
+\begin{figure}[htbp]
+  \centering
+
+  % 这里连续放置四个 0.48\linewidth 子图；LaTeX/PDF 与项目的 Word 转换都会按宽度排成两行。
+  % 转换会自动保持图片布局表无边框，为图片段落应用 LptFigure，并为四个子图题依次补齐
+  % (a) 至 (d) 编号后应用 LptSubfigureCaption，用户不需要添加 Word 专用换行命令。
+  \begin{subfigure}[t]{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{example-fig-1.pdf}
+    \caption{PDF 矢量子图 PDF vector subfigure}
+    \label{fig:subfigure-layout-left}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[t]{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{example-fig-2.png}
+    \caption{PNG 位图子图 PNG bitmap subfigure}
+    \label{fig:subfigure-layout-right}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[t]{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{example-fig-1.pdf}
+    \caption{第二个 PDF 矢量子图 Second PDF vector subfigure}
+    \label{fig:subfigure-layout-bottom-left}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[t]{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{example-fig-2.png}
+    \caption{第二个 PNG 位图子图 Second PNG bitmap subfigure}
+    \label{fig:subfigure-layout-bottom-right}
+  \end{subfigure}
+
+
+  \caption{四子图自动换行布局边界测试 Four-subfigure automatic wrapping edge case}
+  \label{fig:subfigure-layout-test}
+\end{figure}
+
+% \FloatBarrier 只约束 LaTeX/PDF 中此前浮动体的位置；Pandoc 转 Word 不依赖该命令控制图片布局。
+\FloatBarrier
 
 \subsection{表格示例 Table Example}
 \label{subsec:table}
@@ -175,7 +220,7 @@
 \subsection{综合引用示例 Combined Cross-Reference Example}
 \label{subsec:cross-reference}
 
-在讨论中可以同时引用多个对象。例如，第\ref{subsec:equation}节定义了模型，式\ref{eq:sample}给出了数学表达，图\ref{fig:vector-format-test-pdf}、图\ref{fig:vector-format-test-png}和表\ref{tab:sample}分别展示了图片和表格的写法。 Multiple objects can be cited together in the discussion. For example, Section \ref{subsec:equation} defines the model, Equation \ref{eq:sample} gives the mathematical expression, and Figure \ref{fig:vector-format-test-pdf}, Figure \ref{fig:vector-format-test-png}, and Table \ref{tab:sample} show the writing patterns for figures and tables.
+在讨论中可以同时引用多个对象。例如，第\ref{subsec:equation}节定义了模型，式\ref{eq:sample}给出了数学表达，图\ref{fig:vector-format-test-pdf}、图\ref{fig:vector-format-test-png}、图\ref{fig:subfigure-layout-test}和表\ref{tab:sample}分别展示了普通图片、图片布局边界与表格的写法。 Multiple objects can be cited together in the discussion. For example, Section \ref{subsec:equation} defines the model, Equation \ref{eq:sample} gives the mathematical expression, Figures \ref{fig:vector-format-test-pdf}, \ref{fig:vector-format-test-png}, and \ref{fig:subfigure-layout-test} exercise ordinary and edge-case figure layouts, while Table \ref{tab:sample} shows the table pattern.
 本模板的参考文献文件覆盖了多种BibTeX条目类型，包括期刊论文\cite{nightcity2077chipSideChannel,wang2047flyingBlade}、档案资料\cite{天庭巡查司648六根封存}、专著\cite{logan1023firstFlame}、小册子\cite{htt2010teaTimeRules}、文集\cite{senshi514dungeonFoodSystems}、会议论文\cite{二郎642六根分配,bridges2039timefallRouting}、数据库\cite{ofnir1320landsBetweenDatabase}、数据集\cite{heroAssociation2021disasterDataset}、电子资料\cite{alvarez2076braindanceArtifacts}、书中章节\cite{tu550moonEngineChapter}、论文集章节\cite{frieren1045memoryMagic}、手册\cite{sculptor1579prostheticManual}、地图\cite{senshi514goldenCountryMap}、学位论文\cite{gotoh2023stageNoise,sellen1214primevalCurrent}、普通资料\cite{rubicon621jobFragments}、专题著作\cite{moretti1349divinationRisk}、报纸文章\cite{usagiyama2014steamerFault}、在线资料\cite{nakano2011keionGear}、专利\cite{gustav1192priorArtTranslation}、连续出版物\cite{toyohashi2024makeineSpecial}、会议录\cite{ranni1321leyndellSymposium}、软件\cite{allmind621arenaBench}、标准\cite{centrebrain4870dysonInterface}、技术报告\cite{ueg2058heavyFusionScaleup}，以及未出版资料\cite{gotoh2023emergencyStickyNote}；在Pandoc转Word时，这些引用可以通过同一个BibTeX数据库统一管理。 The bibliography file in this template covers many BibTeX entry types, including journal articles \cite{nightcity2077chipSideChannel,wang2047flyingBlade}, archives \cite{天庭巡查司648六根封存}, books \cite{logan1023firstFlame}, booklets \cite{htt2010teaTimeRules}, collections \cite{senshi514dungeonFoodSystems}, conference papers \cite{二郎642六根分配,bridges2039timefallRouting}, databases \cite{ofnir1320landsBetweenDatabase}, datasets \cite{heroAssociation2021disasterDataset}, electronic resources \cite{alvarez2076braindanceArtifacts}, book chapters \cite{tu550moonEngineChapter}, proceedings chapters \cite{frieren1045memoryMagic}, manuals \cite{sculptor1579prostheticManual}, maps \cite{senshi514goldenCountryMap}, theses \cite{gotoh2023stageNoise,sellen1214primevalCurrent}, miscellaneous materials \cite{rubicon621jobFragments}, monographs \cite{moretti1349divinationRisk}, newspaper articles \cite{usagiyama2014steamerFault}, online resources \cite{nakano2011keionGear}, patents \cite{gustav1192priorArtTranslation}, serials \cite{toyohashi2024makeineSpecial}, proceedings \cite{ranni1321leyndellSymposium}, software \cite{allmind621arenaBench}, standards \cite{centrebrain4870dysonInterface}, technical reports \cite{ueg2058heavyFusionScaleup}, and unpublished materials \cite{gotoh2023emergencyStickyNote}. During Pandoc-to-Word conversion, these references can be managed through the same BibTeX database.
 
 \section{结论 Conclusion}

@@ -19,6 +19,42 @@ def load_module():
 
 
 class PreparePandocCompatTests(unittest.TestCase):
+    def test_marks_simple_subfigure_and_image_widths_for_docx_layout(self):
+        module = load_module()
+        tex = r"""
+\begin{figure}
+  \begin{subfigure}[t]{0.48\linewidth}
+    \includegraphics[width=\linewidth,alt={Original figure}]{first.png}
+    \caption{First}
+  \end{subfigure}
+  \begin{subfigure}{.32\textwidth}
+    \includegraphics[width=0.8\linewidth]{second.png}
+    \caption{Second}
+  \end{subfigure}
+  \begin{subfigure}{\dimexpr(\linewidth-1em)/2\relax}
+    \includegraphics[width=\linewidth]{unsupported.png}
+  \end{subfigure}
+\end{figure}
+"""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            result = module.prepare_tex_text(
+                tex,
+                input_dir=ROOT,
+                equation_cache_dir=Path(tmp),
+                render_equation_svg=lambda equation, cache_dir: Path("unused.svg"),
+            )
+
+        self.assertIn(
+            r"[width=\linewidth,alt={Original figure | LPTSUBFIGWIDTH:0.48;LPTIMAGEWIDTH:1}]",
+            result.text,
+        )
+        self.assertIn(
+            r"[width=0.8\linewidth,alt={LPTSUBFIGWIDTH:0.32;LPTIMAGEWIDTH:0.8}]",
+            result.text,
+        )
+        self.assertEqual(result.text.count("LPTSUBFIGWIDTH:"), 2)
+
     def test_expands_glossaries_siunitx_and_bm_macros(self):
         module = load_module()
         tex = r"""

@@ -26,18 +26,7 @@ Required tools:
 - uv, used to create the Python environment and run the conversion scripts. Official installation page: [Installing uv](https://docs.astral.sh/uv/getting-started/installation/).
 - PowerShell on Windows, or Bash on Linux. Windows includes PowerShell, and common Linux distributions include Bash.
 
-Optional editor setup:
-
-- VS Code. Official download page: [Download Visual Studio Code](https://code.visualstudio.com/download).
-- LaTeX Workshop extension. Install it from the VS Code extension marketplace, or see the extension page: [LaTeX Workshop](https://marketplace.visualstudio.com/items?itemName=James-Yu.latex-workshop).
-- Git. If you do not want to install Git, you can download the repository as a ZIP file from GitHub. Official download page: [Git Downloads](https://git-scm.com/downloads/).
-
-This repository already includes LaTeX Workshop recipes in `.vscode/settings.json`:
-
-- `latexmk`: uses `latexmk -xelatex` to handle multi-pass compilation automatically.
-- `xelatex -> bibtex -> xelatex*2`: explicitly runs the full bibliography compilation sequence.
-
-Automatic LaTeX Workshop builds are disabled with `latex-workshop.latex.autoBuild.run = never`, so the project does not recompile repeatedly whenever files are opened or saved. To build manually, run `LaTeX Workshop: Build with recipe` from the VS Code command palette and choose a recipe.
+Git is optional. If you do not want to install Git, you can download the repository as a ZIP file from GitHub. Official download page: [Git Downloads](https://git-scm.com/downloads/).
 
 The Word conversion pipeline is tested automatically on Windows and Ubuntu with:
 
@@ -52,6 +41,8 @@ For detailed file descriptions, conversion internals, and maintenance notes, see
 ## Quick Start
 
 The steps below assume a fresh local directory. Commands that differ between Windows and Linux are shown separately.
+
+Start with this repository's `temp.tex` and replace its example content incrementally. The conversion pipeline is designed around the constrained LaTeX subset used by this template; starting from an unrelated journal or custom template may introduce structures that the compatibility preprocessing or DOCX postprocessing cannot handle reliably.
 
 1. Get the project files.
 
@@ -70,49 +61,34 @@ The steps below assume a fresh local directory. Commands that differ between Win
    4. Extract the ZIP file.
    5. In a terminal, enter the extracted `latex-pandoc-template` folder.
 
-2. Open the project folder in VS Code:
+2. Install the Word converter as a uv tool:
 
    ```powershell
-   code .
+   uv tool install .
    ```
 
-   If the `code` command is unavailable, open VS Code first, then choose `File -> Open Folder...` and select the `latex-pandoc-template` folder.
+   This installs the isolated Python dependencies and makes `lpt-docx` available from any manuscript directory. If uv reports that its executable directory is not on `PATH`, run `uv tool update-shell` and open a new terminal. Repository maintainers can additionally run `uv sync` to create `.venv/` for tests and development.
 
-3. Install or confirm the LaTeX Workshop extension in VS Code.
+3. Compile the example manuscript from the project directory:
 
-   The repository already provides `.vscode/settings.json`, so LaTeX Workshop will load the project recipes after the folder is opened.
-
-4. Prepare Python dependencies:
-
-   ```powershell
-   uv sync
+   ```console
+   xelatex -interaction=nonstopmode temp.tex
+   bibtex temp
+   xelatex -interaction=nonstopmode temp.tex
+   xelatex -interaction=nonstopmode temp.tex
    ```
 
-   This creates `.venv/` and installs the Python dependencies used by the conversion scripts.
+   A successful build produces `temp.pdf`.
 
-5. Open `temp.tex` and compile the PDF first.
+4. Convert the manuscript to a Word review draft:
 
-   In the VS Code command palette, run `LaTeX Workshop: Build with recipe`, then choose `latexmk` or `xelatex -> bibtex -> xelatex*2`.
-
-   A successful build produces `temp.pdf`. If VS Code does not display it automatically, open `temp.pdf` from the file list.
-
-6. Convert the manuscript to a Word review draft.
-
-   On Windows:
-
-   ```powershell
-   .\convert-docx.ps1
+   ```console
+   lpt-docx
    ```
 
-   On Linux:
+   A successful conversion produces `temp.docx`. The repository shortcuts `.\convert-docx.ps1` and `./convert-docx.sh` remain available if you prefer not to install a user-level command.
 
-   ```bash
-   ./convert-docx.sh
-   ```
-
-   A successful conversion produces `temp.docx`.
-
-7. Start replacing the example content.
+5. Start replacing the example content.
 
    Focus first on `temp.tex`, `reference.bib`, and `fig/`. It is best to keep the example section, figure, table, equation, and reference structure at the beginning, then gradually replace it with your own paper content.
 
@@ -126,25 +102,33 @@ If you are new to LaTeX, you usually only need to focus on:
 
 Start by replacing the examples in `temp.tex`. Avoid changing the preamble or conversion scripts at the beginning. For detailed file responsibilities, see [Technical Stack and Implementation Notes](docs/technical-stack.md).
 
+### Optional VS Code Workflow
+
+If you prefer a graphical editor, install [VS Code](https://code.visualstudio.com/download) and the [LaTeX Workshop](https://marketplace.visualstudio.com/items?itemName=James-Yu.latex-workshop) extension. Then open the project from a terminal:
+
+```console
+code .
+```
+
+If the `code` command is unavailable, open VS Code first, choose `File -> Open Folder...`, and select the project folder. The provided `.vscode/settings.json` is loaded automatically and normally does not need to be edited. It includes two LaTeX Workshop recipes:
+
+- `latexmk`: uses `latexmk -xelatex` to handle multi-pass compilation automatically.
+- `xelatex -> bibtex -> xelatex*2`: explicitly runs the full bibliography compilation sequence.
+
+Automatic builds are disabled with `latex-workshop.latex.autoBuild.run = never`, so opening or saving a file does not repeatedly trigger compilation. To build `temp.pdf`, open `temp.tex`, run `LaTeX Workshop: Build with recipe` from the command palette, and choose either recipe.
+
 ## Files To Notice But Usually Not Edit
 
 These files usually do not need to be modified while drafting:
 
 - `gbt7714.bst` and `gbt7714.csl`: reference styles for PDF and Word output.
 - `reference.docx`: Word style template. Edit it only when you need to change Word output styles.
-- `.vscode/settings.json`: VS Code build recipes for LaTeX Workshop.
 - `convert-docx.ps1`, `convert-docx.sh`, `src/lpt_docx/`, `scripts/`, and `filters/`: Word conversion package and compatibility scripts. Run them during normal writing; do not edit them unless maintaining the conversion pipeline.
 - `.pandoc-cache/`, `.venv/`, and LaTeX auxiliary files: generated content. Do not maintain them manually and do not commit them.
 
 ## Compile PDF
 
-In VS Code with LaTeX Workshop:
-
-1. Open `temp.tex`.
-2. Run `LaTeX Workshop: Build with recipe`.
-3. Choose `latexmk` or `xelatex -> bibtex -> xelatex*2`.
-
-Or run the full sequence manually from the repository root on either platform:
+Run the full sequence from the repository root on either platform:
 
 ```console
 xelatex -interaction=nonstopmode temp.tex
@@ -157,7 +141,16 @@ The result is `temp.pdf`. If references or labels have not changed, one or two X
 
 ## Convert To Word
 
-Run the root shortcut for your platform.
+If you completed the uv tool installation in Quick Start, enter a manuscript directory and run:
+
+```console
+lpt-docx
+lpt-docx manuscript.tex --output manuscript-review.docx
+```
+
+With no arguments, `lpt-docx` reads `temp.tex` in the current directory. The project root defaults to the input file's directory, the output defaults to the same filename with a `.docx` suffix, the bibliography defaults to `reference.bib` in the project root, and the cache is written to the project's `.pandoc-cache/`. The CSL file, Word reference document, Lua filter, and postprocessing scripts are bundled with the installed tool.
+
+When working directly from the repository without installing the command, run the root shortcut for your platform.
 
 On Windows:
 
@@ -177,22 +170,7 @@ Both commands generate `temp.docx` and call the same Python core. The equivalent
 uv run lpt-docx temp.tex --output temp.docx --bibliography reference.bib
 ```
 
-To make the converter available from any manuscript directory, install the repository as a uv tool once:
-
-```console
-uv tool install /path/to/latex-pandoc-template
-```
-
-If uv reports that its executable directory is not on `PATH`, run `uv tool update-shell` and open a new terminal. During development, `uv tool install --editable /path/to/latex-pandoc-template` keeps the installed command connected to the checkout.
-
-After installation, enter any manuscript directory and run:
-
-```console
-lpt-docx
-lpt-docx manuscript.tex --output manuscript-review.docx
-```
-
-With no arguments, `lpt-docx` reads `temp.tex` in the current directory. The project root defaults to the input file's directory, the output defaults to the same filename with a `.docx` suffix, the bibliography defaults to `reference.bib` in the project root, and the cache is written to the project's `.pandoc-cache/`. The CSL file, Word reference document, Lua filter, and postprocessing scripts are bundled with the installed tool.
+During converter development, `uv tool install --editable /path/to/latex-pandoc-template` keeps the installed command connected to the checkout.
 
 The script automatically:
 

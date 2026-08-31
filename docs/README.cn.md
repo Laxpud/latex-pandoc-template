@@ -26,18 +26,7 @@
 - uv，用来创建 Python 环境并运行转换脚本。官方下载页面：[Installing uv](https://docs.astral.sh/uv/getting-started/installation/)。
 - Windows 使用 PowerShell，Linux 使用 Bash。Windows 自带 PowerShell，常见 Linux 发行版通常自带 Bash。
 
-可选编辑器环境：
-
-- VS Code。官方下载页面：[Download Visual Studio Code](https://code.visualstudio.com/download)。
-- LaTeX Workshop 扩展。直接从 VS Code 内部扩展市场安装，官方扩展页面：[LaTeX Workshop](https://marketplace.visualstudio.com/items?itemName=James-Yu.latex-workshop)。
-- Git。如果你不想安装 Git，也可以直接从 GitHub 下载 ZIP。官方下载页面：[Git Downloads](https://git-scm.com/downloads/)。
-
-本仓库的 `.vscode/settings.json` 已经写好 LaTeX Workshop 配方：
-
-- `latexmk`：使用 `latexmk -xelatex` 自动处理多轮编译。
-- `xelatex -> bibtex -> xelatex*2`：手动指定完整的参考文献编译流程。
-
-为了避免打开文件后自动反复编译，仓库中已将 `latex-workshop.latex.autoBuild.run` 设置为 `never`。需要编译时，可在 VS Code 命令面板中执行 `LaTeX Workshop: Build with recipe` 并选择对应配方。
+Git 是可选工具。如果不想安装 Git，也可以直接从 GitHub 下载 ZIP。官方下载页面：[Git Downloads](https://git-scm.com/downloads/)。
 
 Word 转换流程会在 Windows 和 Ubuntu 上自动测试，测试基线为：
 
@@ -52,6 +41,8 @@ PDF 编译仍使用 TeX Live 提供的 XeLaTeX 和 BibTeX。
 ## 快速开始
 
 下面从一个全新的本地目录开始说明。Windows 和 Linux 不同的命令会分别列出。
+
+建议以本仓库的 `temp.tex` 作为写作母版，逐步替换其中的示例内容。当前转换流程围绕该模板采用的受控 LaTeX 子集设计；直接套用任意期刊模板或自定义模板，可能引入兼容预处理或 DOCX 后处理无法稳定处理的结构。
 
 1. 获取项目文件。
 
@@ -70,49 +61,34 @@ PDF 编译仍使用 TeX Live 提供的 XeLaTeX 和 BibTeX。
    4. 解压 ZIP 文件。
    5. 在终端中进入解压后的 `latex-pandoc-template` 文件夹。
 
-2. 用 VS Code 打开项目文件夹：
+2. 把 Word 转换器安装为 uv 工具：
 
    ```powershell
-   code .
+   uv tool install .
    ```
 
-   如果 `code` 命令不可用，也可以先打开 VS Code，再选择 `File -> Open Folder...`，打开刚刚 clone 下来的 `latex-pandoc-template` 文件夹。
+   这一步会在隔离环境中安装 Python 依赖，并让 `lpt-docx` 可以从任意论文目录调用。如果 uv 提示可执行文件目录不在 `PATH` 中，运行 `uv tool update-shell` 后重新打开终端。仓库维护者可以另行运行 `uv sync`，创建用于测试和开发的 `.venv/`。
 
-3. 在 VS Code 中安装或确认已安装 LaTeX Workshop 扩展。
+3. 在项目目录中编译示例论文：
 
-   本仓库已经提供 `.vscode/settings.json`，打开项目文件夹后，LaTeX Workshop 会自动读取里面的编译配方。
-
-4. 准备 Python 依赖：
-
-   ```powershell
-   uv sync
+   ```console
+   xelatex -interaction=nonstopmode temp.tex
+   bibtex temp
+   xelatex -interaction=nonstopmode temp.tex
+   xelatex -interaction=nonstopmode temp.tex
    ```
 
-   这一步会创建 `.venv/`，并安装转换脚本需要的 Python 依赖。
+   编译成功后，会得到 `temp.pdf`。
 
-5. 打开 `temp.tex`，先尝试编译 PDF。
+4. 转换 Word 审阅稿：
 
-   在 VS Code 命令面板中执行 `LaTeX Workshop: Build with recipe`，选择 `latexmk` 或 `xelatex -> bibtex -> xelatex*2`。
-
-   编译成功后，会得到 `temp.pdf`。如果 VS Code 没有自动显示 PDF，可以在文件列表中手动打开 `temp.pdf`。
-
-6. 转换 Word 审阅稿。
-
-   Windows：
-
-   ```powershell
-   .\convert-docx.ps1
+   ```console
+   lpt-docx
    ```
 
-   Linux：
+   转换成功后，会得到 `temp.docx`。如果不希望安装用户级命令，仍可使用仓库入口 `.\convert-docx.ps1` 和 `./convert-docx.sh`。
 
-   ```bash
-   ./convert-docx.sh
-   ```
-
-   转换成功后，会得到 `temp.docx`。
-
-7. 开始替换示例内容。
+5. 开始替换示例内容。
 
    优先改 `temp.tex`、`reference.bib` 和 `fig/`。建议先保持示例中的章节、图表、公式和参考文献结构，逐步替换为自己的论文内容。
 
@@ -126,25 +102,33 @@ PDF 编译仍使用 TeX Live 提供的 XeLaTeX 和 BibTeX。
 
 写作时建议从 `temp.tex` 里的示例结构开始替换内容，不要一开始就大幅改导言区和转换脚本。需要了解每个文件的具体职责时，再看 [技术栈与实现说明](technical-stack.md)。
 
+### 可选的 VS Code 写作流程
+
+如果更喜欢图形化编辑器，可以安装 [VS Code](https://code.visualstudio.com/download) 和 [LaTeX Workshop](https://marketplace.visualstudio.com/items?itemName=James-Yu.latex-workshop) 扩展，然后在终端中打开项目：
+
+```console
+code .
+```
+
+如果 `code` 命令不可用，可以先打开 VS Code，选择 `File -> Open Folder...`，再选择项目文件夹。仓库提供的 `.vscode/settings.json` 会被自动读取，通常不需要修改，其中包含两个 LaTeX Workshop 配方：
+
+- `latexmk`：使用 `latexmk -xelatex` 自动处理多轮编译。
+- `xelatex -> bibtex -> xelatex*2`：明确执行完整的参考文献编译流程。
+
+为了避免打开或保存文件时反复编译，仓库已将 `latex-workshop.latex.autoBuild.run` 设置为 `never`。需要生成 `temp.pdf` 时，打开 `temp.tex`，在命令面板中执行 `LaTeX Workshop: Build with recipe`，再选择任一配方。
+
 ## 第一次使用时先注意哪些文件
 
 下面这些文件通常不需要在写作初稿时修改：
 
 - `gbt7714.bst` 和 `gbt7714.csl`：分别用于 PDF 和 Word 的参考文献格式。
 - `reference.docx`：Word 样式模板，只有需要调整 Word 输出样式时再改。
-- `.vscode/settings.json`：VS Code 编译配方，已经配置好 LaTeX Workshop。
 - `convert-docx.ps1`、`convert-docx.sh`、`src/lpt_docx/`、`scripts/` 和 `filters/`：Word 转换包与兼容脚本，日常写作只需要运行，不需要修改。
 - `.pandoc-cache/`、`.venv/` 和 LaTeX 辅助文件：自动生成内容，不需要手动维护，也不需要提交到 Git。
 
 ## 编译 PDF
 
-可以在 VS Code 中使用 LaTeX Workshop：
-
-1. 打开 `temp.tex`。
-2. 执行 `LaTeX Workshop: Build with recipe`。
-3. 选择 `latexmk` 或 `xelatex -> bibtex -> xelatex*2`。
-
-也可以在任一平台的仓库根目录手动运行：
+在任一平台的仓库根目录运行完整编译流程：
 
 ```console
 xelatex -interaction=nonstopmode temp.tex
@@ -157,7 +141,16 @@ xelatex -interaction=nonstopmode temp.tex
 
 ## 转换为 Word
 
-推荐运行当前平台对应的根目录快捷脚本。
+如果已在快速开始中完成 uv 工具安装，进入论文目录后直接运行：
+
+```console
+lpt-docx
+lpt-docx manuscript.tex --output manuscript-review.docx
+```
+
+无参数时，`lpt-docx` 读取当前目录的 `temp.tex`。项目根目录默认为输入文件所在目录，输出默认为同名 `.docx`，参考文献默认为项目根目录的 `reference.bib`，缓存写入论文项目的 `.pandoc-cache/`。CSL、Word 样式模板、Lua filter 和后处理脚本由安装包自带。
+
+如果直接在仓库中工作且没有安装命令，可运行当前平台对应的根目录入口。
 
 Windows：
 
@@ -177,22 +170,7 @@ Linux：
 uv run lpt-docx temp.tex --output temp.docx --bibliography reference.bib
 ```
 
-如果希望从任意论文目录调用转换器，可以一次性把本仓库安装为 uv 工具：
-
-```console
-uv tool install /path/to/latex-pandoc-template
-```
-
-如果 uv 提示可执行文件目录不在 `PATH` 中，运行 `uv tool update-shell` 后重新打开终端。开发期可以使用 `uv tool install --editable /path/to/latex-pandoc-template`，使已安装命令继续跟随当前工作区。
-
-安装完成后，进入任意论文目录即可运行：
-
-```console
-lpt-docx
-lpt-docx manuscript.tex --output manuscript-review.docx
-```
-
-无参数时，`lpt-docx` 读取当前目录的 `temp.tex`。项目根目录默认为输入文件所在目录，输出默认为同名 `.docx`，参考文献默认为项目根目录的 `reference.bib`，缓存写入论文项目的 `.pandoc-cache/`。CSL、Word 样式模板、Lua filter 和后处理脚本由安装包自带。
+转换器开发期可以使用 `uv tool install --editable /path/to/latex-pandoc-template`，使已安装命令继续跟随当前工作区。
 
 脚本会自动完成这些步骤：
 

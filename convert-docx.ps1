@@ -1,16 +1,9 @@
 $ErrorActionPreference = "Stop"
 
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
+$PythonEntry = Join-Path $Root "scripts\tex-to-docx.py"
 
-Push-Location $Root
-try {
-    & ".\scripts\tex-to-docx.ps1" `
-        -InputFile "temp.tex" `
-        -OutputFile "temp.docx" `
-        -Bibliography "reference.bib" `
-        -Csl "gbt7714.csl" `
-        -ReferenceDoc "reference.docx"
-}
-finally {
-    Pop-Location
+& uv run python $PythonEntry @args
+if ($LASTEXITCODE -ne 0) {
+    exit $LASTEXITCODE
 }

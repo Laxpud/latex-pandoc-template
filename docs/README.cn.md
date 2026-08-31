@@ -23,8 +23,8 @@
 
 - TeX Live，并确保 `xelatex` 和 `bibtex` 可用。官方下载页面：[TeX Live](https://www.tug.org/texlive/acquire.html)。
 - Pandoc。官方下载页面：[Installing pandoc](https://pandoc.org/installing.html)。
-- PowerShell。Windows 通常自带 Windows PowerShell；如果需要安装新版 PowerShell 7，可参考：[Install PowerShell on Windows](https://learn.microsoft.com/en-us/powershell/scripting/install/install-powershell-on-windows)。
-- uv，用来创建 Python 环境并运行图片预处理脚本。官方下载页面：[Installing uv](https://docs.astral.sh/uv/getting-started/installation/)。
+- uv，用来创建 Python 环境并运行转换脚本。官方下载页面：[Installing uv](https://docs.astral.sh/uv/getting-started/installation/)。
+- Windows 使用 PowerShell，Linux 使用 Bash。Windows 自带 PowerShell，常见 Linux 发行版通常自带 Bash。
 
 可选编辑器环境：
 
@@ -39,19 +39,19 @@
 
 为了避免打开文件后自动反复编译，仓库中已将 `latex-workshop.latex.autoBuild.run` 设置为 `never`。需要编译时，可在 VS Code 命令面板中执行 `LaTeX Workshop: Build with recipe` 并选择对应配方。
 
-当前本机已验证的主要环境：
+Word 转换流程会在 Windows 和 Ubuntu 上自动测试，测试基线为：
 
-- XeTeX 3.141592653-2.6-0.999998，TeX Live 2026。
-- Pandoc 3.8，Lua 5.4。
-- uv 0.10.4。
-- uv Python 3.14.3。
-- Python 依赖：`PyMuPDF>=1.24.0`。
+- Pandoc 3.8.3，Lua 5.4。
+- uv 0.11.32 和 Python 3.10。
+- Python 依赖：`lxml>=5.3.0` 和 `PyMuPDF>=1.24.0`。
+
+PDF 编译仍使用 TeX Live 提供的 XeLaTeX 和 BibTeX。
 
 更完整的文件说明、转换链路和维护细节见 [技术栈与实现说明](technical-stack.md)。
 
 ## 快速开始
 
-下面从一个全新的本地目录开始说明。命令默认在 PowerShell 中运行。
+下面从一个全新的本地目录开始说明。Windows 和 Linux 不同的命令会分别列出。
 
 1. 获取项目文件。
 
@@ -68,7 +68,7 @@
    2. 点击 `Code`。
    3. 选择 `Download ZIP`。
    4. 解压 ZIP 文件。
-   5. 在 PowerShell 中进入解压后的 `latex-pandoc-template` 文件夹。
+   5. 在终端中进入解压后的 `latex-pandoc-template` 文件夹。
 
 2. 用 VS Code 打开项目文件夹：
 
@@ -88,7 +88,7 @@
    uv sync
    ```
 
-   这一步会创建 `.venv/`，并安装图片预处理脚本需要的 Python 依赖。
+   这一步会创建 `.venv/`，并安装转换脚本需要的 Python 依赖。
 
 5. 打开 `temp.tex`，先尝试编译 PDF。
 
@@ -96,10 +96,18 @@
 
    编译成功后，会得到 `temp.pdf`。如果 VS Code 没有自动显示 PDF，可以在文件列表中手动打开 `temp.pdf`。
 
-6. 转换 Word 审阅稿：
+6. 转换 Word 审阅稿。
+
+   Windows：
 
    ```powershell
    .\convert-docx.ps1
+   ```
+
+   Linux：
+
+   ```bash
+   ./convert-docx.sh
    ```
 
    转换成功后，会得到 `temp.docx`。
@@ -125,7 +133,7 @@
 - `gbt7714.bst` 和 `gbt7714.csl`：分别用于 PDF 和 Word 的参考文献格式。
 - `reference.docx`：Word 样式模板，只有需要调整 Word 输出样式时再改。
 - `.vscode/settings.json`：VS Code 编译配方，已经配置好 LaTeX Workshop。
-- `convert-docx.ps1`、`scripts/` 和 `filters/`：Word 转换流程相关脚本，日常写作只需要运行，不需要修改。
+- `convert-docx.ps1`、`convert-docx.sh`、`scripts/` 和 `filters/`：Word 转换流程相关脚本，日常写作只需要运行，不需要修改。
 - `.pandoc-cache/`、`.venv/` 和 LaTeX 辅助文件：自动生成内容，不需要手动维护，也不需要提交到 Git。
 
 ## 编译 PDF
@@ -136,9 +144,9 @@
 2. 执行 `LaTeX Workshop: Build with recipe`。
 3. 选择 `latexmk` 或 `xelatex -> bibtex -> xelatex*2`。
 
-也可以在仓库根目录手动运行：
+也可以在任一平台的仓库根目录手动运行：
 
-```powershell
+```console
 xelatex -interaction=nonstopmode temp.tex
 bibtex temp
 xelatex -interaction=nonstopmode temp.tex
@@ -149,21 +157,24 @@ xelatex -interaction=nonstopmode temp.tex
 
 ## 转换为 Word
 
-推荐直接运行根目录快捷脚本：
+推荐运行当前平台对应的根目录快捷脚本。
+
+Windows：
 
 ```powershell
 .\convert-docx.ps1
 ```
 
-生成结果为 `temp.docx`。该脚本等价于调用：
+Linux：
 
-```powershell
-.\scripts\tex-to-docx.ps1 `
-    -InputFile temp.tex `
-    -OutputFile temp.docx `
-    -Bibliography reference.bib `
-    -Csl gbt7714.csl `
-    -ReferenceDoc reference.docx
+```bash
+./convert-docx.sh
+```
+
+两个入口都会调用同一份 Python 核心并生成 `temp.docx`，等价的直接命令为：
+
+```console
+uv run python scripts/tex-to-docx.py --input temp.tex --output temp.docx --bibliography reference.bib --csl gbt7714.csl --reference-doc reference.docx
 ```
 
 脚本会自动完成这些步骤：
@@ -174,7 +185,7 @@ xelatex -interaction=nonstopmode temp.tex
 - 为 Word 表格补充三线表边框和表格段落样式，并自动居中、按内容调整表格宽度。
 - 规范化 Word 文档中的项目样式 ID，使其使用 `Lpt...` 前缀。
 
-如果需要自定义输入、输出或样式模板，可以直接调用 `scripts/tex-to-docx.ps1` 并传入参数。
+如果需要自定义输入、输出、参考文献、样式模板或图片 DPI，可以向任一根入口或 Python 命令传入 `--input`、`--output`、`--bibliography`、`--csl`、`--reference-doc` 或 `--image-dpi`。
 
 ## Word 样式模板
 
@@ -182,8 +193,8 @@ xelatex -interaction=nonstopmode temp.tex
 
 替换或重新生成 `reference.docx` 后，可以运行：
 
-```powershell
-uv run python .\scripts\namespace-reference-docx-styles.py reference.docx
+```console
+uv run python scripts/namespace-reference-docx-styles.py reference.docx
 ```
 
 调整标题格式时，不要在 `reference.docx` 正文里手动输入 `1`、`1.1` 这类编号；标题编号需要通过 Word 多级列表绑定到 `LptHeading1`、`LptHeading2` 和 `LptHeading3` 样式。上面的脚本会自动修复这三个标题样式的多级编号关系。

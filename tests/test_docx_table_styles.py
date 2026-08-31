@@ -13,16 +13,12 @@ FIGURE_PATH = ROOT / "fig" / "example-fig-2.png"
 FILTER_PATH = ROOT / "filters" / "latex-crossref-cn.lua"
 REFERENCE_DOCX = ROOT / "reference.docx"
 STYLE_NORMALIZER_PATH = ROOT / "scripts" / "namespace-reference-docx-styles.py"
-TABLE_STYLE_SCRIPT = ROOT / "scripts" / "apply-docx-table-styles.ps1"
+TABLE_STYLE_SCRIPT = ROOT / "scripts" / "apply-docx-table-styles.py"
 COMPAT_PREP_SCRIPT = ROOT / "scripts" / "prepare-pandoc-compat.py"
 WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 WP_NS = "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
 VAL = f"{{{WORD_NS}}}val"
 WIDTH = f"{{{WORD_NS}}}w"
-
-
-def find_powershell() -> str | None:
-    return shutil.which("pwsh") or shutil.which("powershell")
 
 
 def read_tables(docx_path: Path) -> list[ET.Element]:
@@ -78,10 +74,6 @@ def paragraph_styles(table: ET.Element) -> set[str]:
 
 class DocxTableStylesTests(unittest.TestCase):
     def test_four_relative_width_subfigures_wrap_into_two_docx_rows(self):
-        powershell = find_powershell()
-        if powershell is None:
-            self.skipTest("PowerShell is required to test DOCX table post-processing")
-
         image_path = FIGURE_PATH.as_posix()
         subfigures = "\n".join(
             rf"""
@@ -145,13 +137,18 @@ class DocxTableStylesTests(unittest.TestCase):
             )
             subprocess.run(
                 [
-                    powershell,
-                    "-NoProfile",
-                    "-File",
+                    sys.executable,
                     str(TABLE_STYLE_SCRIPT),
-                    "-DocxFile",
                     str(output_docx),
                 ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            # Re-running the postprocessor must not add borders or otherwise
+            # disturb a subfigure table after its internal markers are gone.
+            subprocess.run(
+                [sys.executable, str(TABLE_STYLE_SCRIPT), str(output_docx)],
                 check=True,
                 capture_output=True,
                 text=True,
@@ -210,10 +207,6 @@ class DocxTableStylesTests(unittest.TestCase):
             )
 
     def test_figure_layout_table_is_ignored_but_data_table_is_styled(self):
-        powershell = find_powershell()
-        if powershell is None:
-            self.skipTest("PowerShell is required to test DOCX table post-processing")
-
         image_path = FIGURE_PATH.as_posix()
         tex = rf"""
 \documentclass{{article}}
@@ -271,11 +264,8 @@ class DocxTableStylesTests(unittest.TestCase):
             )
             subprocess.run(
                 [
-                    powershell,
-                    "-NoProfile",
-                    "-File",
+                    sys.executable,
                     str(TABLE_STYLE_SCRIPT),
-                    "-DocxFile",
                     str(output_docx),
                 ],
                 check=True,
@@ -316,10 +306,6 @@ class DocxTableStylesTests(unittest.TestCase):
         )
 
     def test_all_figure_images_and_subcaptions_use_project_styles(self):
-        powershell = find_powershell()
-        if powershell is None:
-            self.skipTest("PowerShell is required to test DOCX table post-processing")
-
         image_path = FIGURE_PATH.as_posix()
         tex = rf"""
 \documentclass{{article}}
@@ -387,11 +373,8 @@ class DocxTableStylesTests(unittest.TestCase):
             )
             subprocess.run(
                 [
-                    powershell,
-                    "-NoProfile",
-                    "-File",
+                    sys.executable,
                     str(TABLE_STYLE_SCRIPT),
-                    "-DocxFile",
                     str(output_docx),
                 ],
                 check=True,

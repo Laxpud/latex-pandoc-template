@@ -23,8 +23,8 @@ Required tools:
 
 - TeX Live, with `xelatex` and `bibtex` available. Official download page: [TeX Live](https://www.tug.org/texlive/acquire.html).
 - Pandoc. Official download page: [Installing pandoc](https://pandoc.org/installing.html).
-- PowerShell. Windows usually includes Windows PowerShell. To install PowerShell 7, see [Install PowerShell on Windows](https://learn.microsoft.com/en-us/powershell/scripting/install/install-powershell-on-windows).
-- uv, used to create the Python environment and run the image preprocessing script. Official installation page: [Installing uv](https://docs.astral.sh/uv/getting-started/installation/).
+- uv, used to create the Python environment and run the conversion scripts. Official installation page: [Installing uv](https://docs.astral.sh/uv/getting-started/installation/).
+- PowerShell on Windows, or Bash on Linux. Windows includes PowerShell, and common Linux distributions include Bash.
 
 Optional editor setup:
 
@@ -39,19 +39,19 @@ This repository already includes LaTeX Workshop recipes in `.vscode/settings.jso
 
 Automatic LaTeX Workshop builds are disabled with `latex-workshop.latex.autoBuild.run = never`, so the project does not recompile repeatedly whenever files are opened or saved. To build manually, run `LaTeX Workshop: Build with recipe` from the VS Code command palette and choose a recipe.
 
-Main environment verified locally:
+The Word conversion pipeline is tested automatically on Windows and Ubuntu with:
 
-- XeTeX 3.141592653-2.6-0.999998, TeX Live 2026.
-- Pandoc 3.8, Lua 5.4.
-- uv 0.10.4.
-- uv Python 3.14.3.
-- Python dependency: `PyMuPDF>=1.24.0`.
+- Pandoc 3.8.3, Lua 5.4.
+- uv 0.11.32 and Python 3.10.
+- Python dependencies: `lxml>=5.3.0` and `PyMuPDF>=1.24.0`.
+
+PDF compilation remains based on XeLaTeX and BibTeX from TeX Live.
 
 For detailed file descriptions, conversion internals, and maintenance notes, see [Technical Stack and Implementation Notes](docs/technical-stack.md).
 
 ## Quick Start
 
-The steps below assume a fresh local directory. Commands are shown for PowerShell.
+The steps below assume a fresh local directory. Commands that differ between Windows and Linux are shown separately.
 
 1. Get the project files.
 
@@ -68,7 +68,7 @@ The steps below assume a fresh local directory. Commands are shown for PowerShel
    2. Click `Code`.
    3. Choose `Download ZIP`.
    4. Extract the ZIP file.
-   5. In PowerShell, enter the extracted `latex-pandoc-template` folder.
+   5. In a terminal, enter the extracted `latex-pandoc-template` folder.
 
 2. Open the project folder in VS Code:
 
@@ -88,7 +88,7 @@ The steps below assume a fresh local directory. Commands are shown for PowerShel
    uv sync
    ```
 
-   This creates `.venv/` and installs the Python dependency needed by the image preprocessing script.
+   This creates `.venv/` and installs the Python dependencies used by the conversion scripts.
 
 5. Open `temp.tex` and compile the PDF first.
 
@@ -96,10 +96,18 @@ The steps below assume a fresh local directory. Commands are shown for PowerShel
 
    A successful build produces `temp.pdf`. If VS Code does not display it automatically, open `temp.pdf` from the file list.
 
-6. Convert the manuscript to a Word review draft:
+6. Convert the manuscript to a Word review draft.
+
+   On Windows:
 
    ```powershell
    .\convert-docx.ps1
+   ```
+
+   On Linux:
+
+   ```bash
+   ./convert-docx.sh
    ```
 
    A successful conversion produces `temp.docx`.
@@ -125,7 +133,7 @@ These files usually do not need to be modified while drafting:
 - `gbt7714.bst` and `gbt7714.csl`: reference styles for PDF and Word output.
 - `reference.docx`: Word style template. Edit it only when you need to change Word output styles.
 - `.vscode/settings.json`: VS Code build recipes for LaTeX Workshop.
-- `convert-docx.ps1`, `scripts/`, and `filters/`: Word conversion scripts. Run them during normal writing; do not edit them unless maintaining the conversion pipeline.
+- `convert-docx.ps1`, `convert-docx.sh`, `scripts/`, and `filters/`: Word conversion scripts. Run them during normal writing; do not edit them unless maintaining the conversion pipeline.
 - `.pandoc-cache/`, `.venv/`, and LaTeX auxiliary files: generated content. Do not maintain them manually and do not commit them.
 
 ## Compile PDF
@@ -136,9 +144,9 @@ In VS Code with LaTeX Workshop:
 2. Run `LaTeX Workshop: Build with recipe`.
 3. Choose `latexmk` or `xelatex -> bibtex -> xelatex*2`.
 
-Or run the full sequence manually from the repository root:
+Or run the full sequence manually from the repository root on either platform:
 
-```powershell
+```console
 xelatex -interaction=nonstopmode temp.tex
 bibtex temp
 xelatex -interaction=nonstopmode temp.tex
@@ -149,21 +157,24 @@ The result is `temp.pdf`. If references or labels have not changed, one or two X
 
 ## Convert To Word
 
-Run the root shortcut script:
+Run the root shortcut for your platform.
+
+On Windows:
 
 ```powershell
 .\convert-docx.ps1
 ```
 
-The result is `temp.docx`. This is equivalent to:
+On Linux:
 
-```powershell
-.\scripts\tex-to-docx.ps1 `
-    -InputFile temp.tex `
-    -OutputFile temp.docx `
-    -Bibliography reference.bib `
-    -Csl gbt7714.csl `
-    -ReferenceDoc reference.docx
+```bash
+./convert-docx.sh
+```
+
+Both commands generate `temp.docx` and call the same Python core. The equivalent direct command is:
+
+```console
+uv run python scripts/tex-to-docx.py --input temp.tex --output temp.docx --bibliography reference.bib --csl gbt7714.csl --reference-doc reference.docx
 ```
 
 The script automatically:
@@ -174,7 +185,7 @@ The script automatically:
 - Adds three-line-table borders and table paragraph styles in Word, centers tables, and enables autofit width.
 - Normalizes project style IDs in the Word document to use the `Lpt...` prefix.
 
-For custom input, output, or style templates, call `scripts/tex-to-docx.ps1` directly with parameters.
+For custom input, output, bibliography, style template, or image DPI, pass `--input`, `--output`, `--bibliography`, `--csl`, `--reference-doc`, or `--image-dpi` to either root shortcut or the Python command.
 
 ## Word Style Template
 
@@ -182,8 +193,8 @@ Project style IDs in `reference.docx` use the `Lpt...` prefix, such as `LptHeadi
 
 After replacing or regenerating `reference.docx`, run:
 
-```powershell
-uv run python .\scripts\namespace-reference-docx-styles.py reference.docx
+```console
+uv run python scripts/namespace-reference-docx-styles.py reference.docx
 ```
 
 When adjusting heading styles, do not manually type numbers such as `1` or `1.1` in the body of `reference.docx`. Heading numbering should be bound through Word multilevel lists to `LptHeading1`, `LptHeading2`, and `LptHeading3`. The script above repairs those numbering relationships.

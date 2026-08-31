@@ -26,15 +26,15 @@
 
 ## 环境与依赖
 
-当前仓库已在以下环境中验证：
+当前 Word 转换链路通过 GitHub Actions 在 Windows 和 Ubuntu 上验证，自动测试基线为：
 
-- 操作环境：Windows + PowerShell。
-- TeX 引擎：XeTeX 3.141592653-2.6-0.999998，TeX Live 2026。
-- 参考文献编译：BibTeX，随 TeX Live 提供。
-- Pandoc：3.8，内置 Lua 5.4。
-- uv：0.10.4。
-- Python：由 uv 管理，当前为 Python 3.14.3。
-- Python 依赖：`PyMuPDF>=1.24.0`。
+- 操作环境：Windows + PowerShell、Ubuntu + Bash。
+- Pandoc：3.8.3，内置 Lua 5.4。
+- uv：0.11.32。
+- Python：最低支持 3.10。
+- Python 依赖：`lxml>=5.3.0`、`PyMuPDF>=1.24.0`。
+
+PDF 编译链路使用 TeX Live 提供的 XeLaTeX 和 BibTeX，不属于 Word 转换 CI 的安装范围。
 
 各工具职责如下：
 
@@ -44,15 +44,17 @@
 - Pandoc 负责把预处理后的 LaTeX 输入转换为 DOCX。
 - Pandoc citeproc 根据 `reference.bib` 和 `gbt7714.csl` 生成 Word 侧参考文献。
 - Pandoc Lua filter 负责补充中文编号、交叉引用和 Word 自定义样式。
-- PowerShell 负责串联转换流程，并直接处理 DOCX 中的 Open XML。
-- uv 负责创建 Python 环境并运行兼容预处理、图片预处理、样式规范化脚本。
+- Python 负责串联 Word 转换流程，并执行兼容预处理、图片预处理和 DOCX 后处理。
+- PowerShell 与 Bash 只提供对应平台的根目录快捷入口，二者调用同一份 Python 核心。
+- uv 负责创建和锁定 Python 环境。
 - TeX Live 的 `latex` 和 `dvisvgm` 保留给实验性的公式 SVG 渲染分支；该分支当前默认关闭。
 - PyMuPDF 用于把 PDF 图片渲染为 Pandoc DOCX writer 更容易处理的 PNG。
+- lxml 用于可靠地遍历和写回带命名空间的 Word Open XML。
 - VS Code 和 LaTeX Workshop 提供编辑器内的 PDF 编译入口。
 
 `pyproject.toml` 中声明 Python 最低版本为 `>=3.10`。日常使用时优先运行：
 
-```powershell
+```console
 uv sync
 ```
 
@@ -77,18 +79,20 @@ uv sync
 
 ### 转换入口与脚本
 
-- `convert-docx.ps1`：项目推荐的 Word 转换快捷入口。它固定使用当前项目文件名，把 `temp.tex` 转换为 `temp.docx`。
-- `scripts/tex-to-docx.ps1`：Word 转换主脚本，负责串联兼容预处理、图片预处理、Pandoc、表格后处理和样式规范化。
+- `convert-docx.ps1`：Windows Word 转换快捷入口，只负责调用 Python 核心并转发参数。
+- `convert-docx.sh`：Linux Word 转换快捷入口，与 PowerShell 入口行为一致。
+- `scripts/tex-to-docx.py`：跨平台 Word 转换主脚本，负责串联兼容预处理、图片预处理、Pandoc、表格后处理和样式规范化。
 - `scripts/prepare-pandoc-compat.py`：兼容预处理脚本，展开少量常用宏，并为简单相对宽度子图保留 DOCX 布局信息；公式 SVG 渲染分支保留在脚本中但当前默认关闭。
 - `scripts/prepare-pandoc-images.py`：图片预处理脚本，把 LaTeX 中引用的 PDF 图片渲染为 PNG，并写入 Pandoc 临时输入文件。
-- `scripts/apply-docx-table-styles.ps1`：DOCX 表格与图片段落后处理脚本，直接修改 `word/document.xml`，为正文数据表补充三线表样式、按子图宽度重排 Pandoc 图片布局表，并统一图片段落样式。
+- `scripts/apply-docx-table-styles.py`：DOCX 表格与图片段落后处理脚本，直接修改 `word/document.xml`，为正文数据表补充三线表样式、按子图宽度重排 Pandoc 图片布局表，并统一图片段落样式。
 - `scripts/namespace-reference-docx-styles.py`：样式规范化脚本，维护 `Lpt...` 样式 ID、标题编号和文档内样式引用。
 - `filters/latex-crossref-cn.lua`：Pandoc Lua filter，负责中文图表题、公式编号、交叉引用、front matter、参考文献和 Word 段落样式。
 
 ### 编辑器、依赖和缓存
 
 - `.vscode/settings.json`：VS Code 和 LaTeX Workshop 的本项目编译配方。
-- `pyproject.toml`：Python 项目配置，声明 `PyMuPDF` 等脚本依赖。
+- `.github/workflows/cross-platform.yml`：在 Windows 和 Ubuntu 上运行测试并验证对应的 Word 转换入口。
+- `pyproject.toml`：Python 项目配置，声明 lxml、PyMuPDF 等脚本依赖。
 - `uv.lock`：uv 锁定文件，用于复现 Python 依赖环境。
 - `.pandoc-cache/`：Pandoc 转 Word 时生成的临时目录，包括临时 TeX 输入和缓存 PNG 图片。该目录被 Git 忽略。
 - `.venv/`：uv 创建的本地 Python 虚拟环境。该目录被 Git 忽略。
@@ -188,53 +192,53 @@ LaTeX Workshop 工具参数中使用 `%DOC%` 和 `%DOCFILE%`：
 
 ## Word 转换链路
 
-推荐入口为根目录下的快捷脚本：
+推荐运行当前平台对应的根目录快捷脚本：
 
 ```powershell
 .\convert-docx.ps1
 ```
 
-它会切换到仓库根目录，然后调用：
-
-```powershell
-.\scripts\tex-to-docx.ps1 `
-    -InputFile "temp.tex" `
-    -OutputFile "temp.docx" `
-    -Bibliography "reference.bib" `
-    -Csl "gbt7714.csl" `
-    -ReferenceDoc "reference.docx"
+```bash
+./convert-docx.sh
 ```
 
-需要注意：`scripts/tex-to-docx.ps1` 自身仍保留一组通用默认参数：
+两个入口只负责定位并调用同一个 Python 核心，同时原样转发命令行参数。直接调用方式为：
 
-- `InputFile = "temp.tex"`
-- `OutputFile = "temp-crossref.docx"`
-- `Bibliography = "temp-ref.bib"`
-- `Csl = "temp-ref.csl"`
-- `ReferenceDoc = ""`
-- `ImageDpi = 300`
+```console
+uv run python scripts/tex-to-docx.py
+```
 
-这些默认值不是当前项目推荐入口。当前项目推荐通过 `convert-docx.ps1` 传入实际文件名，保证使用 `reference.bib`、`gbt7714.csl` 和 `reference.docx`。
+无参数时使用项目推荐默认值：
 
-`scripts/tex-to-docx.ps1` 的主要流程：
+- `--input = temp.tex`
+- `--output = temp.docx`
+- `--bibliography = reference.bib`
+- `--csl = gbt7714.csl`
+- `--reference-doc = reference.docx`
+- `--image-dpi = 300`
 
-1. 设置 `$ErrorActionPreference = "Stop"`，并检查 native 命令退出码，确保中间步骤失败时立即停止。
-2. 计算仓库根目录、Lua filter、Pandoc 缓存目录、图片缓存目录和公式缓存目录。
+默认路径以仓库根目录为基准；显式传入的相对路径以调用命令时的当前目录为基准。根目录两个快捷入口和 Python 核心接受同一组 `--...` 参数。
+
+`scripts/tex-to-docx.py` 的主要流程：
+
+1. 校验输入、参考文献、CSL、Word 样式模板、Lua filter 和 Pandoc 是否存在。
+2. 计算仓库根目录、缓存目录和当前平台的 Pandoc resource path。
 3. 调用 `scripts/prepare-pandoc-compat.py` 生成 `.pandoc-cache/compat/temp-compat.tex`。
 4. 调用 `scripts/prepare-pandoc-images.py` 生成 `.pandoc-cache/temp-pandoc.tex`。
-5. 组装 Pandoc 参数并执行 DOCX 转换。
-6. 调用 `scripts/apply-docx-table-styles.ps1` 修正表格 Open XML。
+5. 让 Pandoc 先生成与目标文件同目录的临时 DOCX。
+6. 调用 `scripts/apply-docx-table-styles.py` 修正表格 Open XML。
 7. 调用 `scripts/namespace-reference-docx-styles.py` 规范化 DOCX 样式 ID。
+8. 全部步骤成功后用临时 DOCX 原子替换目标文件；失败时保留已有输出。
 
 Pandoc 核心参数包括：
 
 - 输入文件：`.pandoc-cache/temp-pandoc.tex`。
-- 输出文件：由 `-OutputFile` 指定。
+- 输出文件：由 `--output` 指定。
 - `--citeproc`：启用 Pandoc 内置参考文献处理。
 - `--lua-filter=filters/latex-crossref-cn.lua`：启用中文编号和样式处理。
 - `--bibliography=...`：指定 BibTeX 数据库。
 - `--csl=...`：指定 Word 侧参考文献样式。
-- `--resource-path=.;fig;refference/fig;.pandoc-cache/images;.pandoc-cache/equations`：指定普通图片和实验性公式图片缓存的搜索路径。
+- `--resource-path=...`：包含仓库根目录、`fig`、`refference/fig`、图片缓存和公式缓存；Python 使用 `os.pathsep` 自动选择 Windows 的分号或 Linux 的冒号。
 - `--reference-doc=reference.docx`：指定 Word 样式模板。
 
 缓存目录 `.pandoc-cache/` 被 `.gitignore` 忽略，里面的内容可随时删除后重新生成。
@@ -446,18 +450,18 @@ Lua filter 会在 Pandoc AST 层面为表头和表身单元格内容加样式：
 
 ## DOCX 表格与图片段落后处理
 
-`scripts/apply-docx-table-styles.ps1` 会直接修改 DOCX 压缩包中的 `word/document.xml`。
+`scripts/apply-docx-table-styles.py` 使用 lxml 直接修改 DOCX 压缩包中的 `word/document.xml`。
 
 处理范围：
 
-- 打开目标 DOCX 到临时文件。
+- 完整读取目标 DOCX，并在目标目录创建临时文件。
 - 读取 `word/document.xml`。
 - 遍历所有 `w:tbl`，先读取 `w:tblStyle` 判断表格用途。
 - 跳过 Pandoc 为复合图片生成的 `FigureTable` 布局表。
 - 修改其余正文表格的属性、边框和单元格段落样式。
 - 遍历包含 `w:drawing` 的图片段落，统一应用 `LptFigure`；带编号公式图片保留 `LptEquationNumbered`。
-- 写回 `word/document.xml`。
-- 用处理后的临时 DOCX 覆盖原输出文件。
+- 在保留其他 ZIP 部件和 Open XML 命名空间的前提下写回 `word/document.xml`。
+- 处理成功后原子替换输出；失败时不覆盖原文件。
 
 表格布局处理：
 
@@ -477,8 +481,8 @@ Lua filter 会在 Pandoc AST 层面为表头和表身单元格内容加样式：
 
 - 第一行所有单元格段落使用 `LptTableHeader`。
 - 其余行所有单元格段落使用 `LptTableBody`。
-- 脚本参数允许覆盖表头和表身样式名，但项目默认使用上述两个样式。
-- `FigureStyle` 参数允许覆盖图片段落样式名，项目默认使用 `LptFigure`。
+- `--header-style` 和 `--body-style` 允许覆盖表头和表身样式名，项目默认使用上述两个样式。
+- `--figure-style` 允许覆盖图片段落样式名，项目默认使用 `LptFigure`。
 
 图片布局表处理：
 
@@ -529,7 +533,7 @@ Lua filter 会在 Pandoc AST 层面为表头和表身单元格内容加样式：
 
 1. `\includegraphics` 中的文件名是否正确。
 2. 图片是否在 `fig/`、TeX 文件同目录或 `\graphicspath` 声明目录中。
-3. `scripts/tex-to-docx.ps1` 的 `--resource-path` 是否包含该目录。
+3. `scripts/tex-to-docx.py` 组装的 `--resource-path` 是否包含该目录。
 4. 如果图片是 PDF，确认 `prepare-pandoc-images.py` 是否成功生成缓存 PNG。
 
 ### PDF 图片没有更新
@@ -540,7 +544,7 @@ Lua filter 会在 Pandoc AST 层面为表头和表身单元格内容加样式：
 - 使用的 DPI 没变，缓存仍被判断为有效。
 - 引用路径指向了另一个同名 PDF。
 
-可删除 `.pandoc-cache/images/` 后重新运行 `.\convert-docx.ps1`。
+可删除 `.pandoc-cache/images/` 后重新运行当前平台的 `convert-docx.ps1` 或 `convert-docx.sh`。
 
 ### 引用编号异常
 
@@ -556,8 +560,8 @@ Lua filter 会在 Pandoc AST 层面为表头和表身单元格内容加样式：
 
 优先运行：
 
-```powershell
-uv run python .\scripts\namespace-reference-docx-styles.py reference.docx
+```console
+uv run python scripts/namespace-reference-docx-styles.py reference.docx
 ```
 
 然后重新生成 DOCX。不要在 `reference.docx` 正文中手工输入 `1`、`1.1` 作为标题编号；标题编号应由多级列表和 `LptHeading1`、`LptHeading2`、`LptHeading3` 样式绑定。
@@ -566,7 +570,7 @@ uv run python .\scripts\namespace-reference-docx-styles.py reference.docx
 
 检查内容：
 
-- 转换时是否传入 `-ReferenceDoc reference.docx`。
+- 转换时是否传入 `--reference-doc reference.docx`。
 - `reference.docx` 中是否存在对应的 `Lpt...` 样式。
 - 输出 DOCX 是否经过 `namespace-reference-docx-styles.py`。
 - Lua filter 中的 `styles` 表是否和 `reference.docx` 中的样式 ID 一致。
@@ -581,16 +585,16 @@ PDF 侧检查：
 
 Word 侧检查：
 
-- `scripts/tex-to-docx.ps1` 是否传入 `--citeproc`。
-- `-Bibliography` 是否指向 `reference.bib`。
-- `-Csl` 是否指向 `gbt7714.csl`。
+- `scripts/tex-to-docx.py` 是否向 Pandoc 传入 `--citeproc`。
+- `--bibliography` 是否指向 `reference.bib`。
+- `--csl` 是否指向 `gbt7714.csl`。
 - Pandoc 输出中是否存在 identifier 为 `refs` 的参考文献容器。
 
 ### 表格不是三线表
 
 检查内容：
 
-- `scripts/apply-docx-table-styles.ps1` 是否运行成功。
+- `scripts/apply-docx-table-styles.py` 是否运行成功。
 - 输出 DOCX 是否被后续 Word 操作覆盖了表格边框。
 - 表格是否是 Pandoc 能识别的标准表格结构。
 - `reference.docx` 中是否存在 `LptTableHeader` 和 `LptTableBody`。
@@ -599,7 +603,7 @@ Word 侧检查：
 
 - README 只保留日常使用说明和关键入口。
 - 技术细节、脚本职责和样式系统说明集中放在本文档。
-- 修改转换流程时，同时检查 `convert-docx.ps1`、`scripts/tex-to-docx.ps1` 和本文档。
+- 修改转换流程时，同时检查两个根目录入口、`scripts/tex-to-docx.py` 和本文档。
 - 修改 Word 样式时，优先通过 `reference.docx` 和 `namespace-reference-docx-styles.py` 保持样式 ID 稳定。
 - 新增 Pandoc 样式时，同步维护 Lua filter 的 `styles` 表、`STYLE_ID_MAP` 和 `reference.docx`。
 - 新增支持的 LaTeX 写法时，先确认 Pandoc AST 输出形态，再决定是否修改 Lua filter。

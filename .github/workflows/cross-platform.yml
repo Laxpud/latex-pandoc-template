@@ -1,0 +1,59 @@
+name: Cross-platform conversion
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv and Python
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.11.32"
+          python-version: "3.10"
+          enable-cache: true
+
+      - name: Install Pandoc
+        uses: r-lib/actions/setup-pandoc@d3c5be51b12e724e68f33216ca3c148b66d5f0b6 # v2.12.1
+        with:
+          pandoc-version: "3.8.3"
+
+      - name: Sync locked dependencies
+        run: uv sync --locked
+
+      - name: Run tests
+        run: uv run python -m unittest discover -s tests -v
+
+      - name: Run Bash entry point
+        if: runner.os == 'Linux'
+        run: ./convert-docx.sh --output .pandoc-cache/ci-wrapper.docx
+
+      - name: Run PowerShell entry point
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: .\convert-docx.ps1 --output .pandoc-cache\ci-wrapper.docx
+
+      - name: Validate wrapper output
+        run: uv run python -m zipfile -t .pandoc-cache/ci-wrapper.docx
+
+      - name: Check whitespace errors
+        run: git diff --check

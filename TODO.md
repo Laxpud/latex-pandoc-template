@@ -11,6 +11,8 @@
 
 ## 转换兼容层
 
+- [x] 提供 Windows 和 Linux 共用的 Python Word 转换核心。
+  - 验收标准：PowerShell 与 Bash 根入口调用同一 Python 核心；Linux 不安装 PowerShell 也能生成有效 DOCX；Windows 和 Ubuntu CI 均运行完整测试及各自入口。
 - [ ] 定稿编号公式转换策略。
   - 验收标准：在 SVG 图片公式和 Pandoc 与 Word 原生 OMML 公式之间选定默认路径，并用 `temp.tex` 示例验证公式居中、编号对齐和交叉引用。
 - [ ] 用一篇真实论文做完整转换回归。

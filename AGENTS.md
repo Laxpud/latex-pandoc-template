@@ -25,7 +25,8 @@
 - 参考文献数据库：`reference.bib`
 - 图片目录：`fig/`
 - Word 转换快捷入口：`.\convert-docx.ps1`
-- Word 转换主脚本：`.\scripts\tex-to-docx.ps1`
+- Linux Word 转换快捷入口：`./convert-docx.sh`
+- Word 转换主脚本：`scripts/tex-to-docx.py`
 - Pandoc Lua filter：`filters/latex-crossref-cn.lua`
 - 英文 README：`README.md`
 - 中文 README：`docs/README.cn.md`
@@ -85,6 +86,12 @@ xelatex -interaction=nonstopmode temp.tex
 .\convert-docx.ps1
 ```
 
+Linux 下运行：
+
+```bash
+./convert-docx.sh
+```
+
 修改文档后至少运行：
 
 ```powershell
@@ -97,7 +104,7 @@ git diff --check
 pandoc temp.tex --lua-filter=filters\latex-crossref-cn.lua -t native -o C:\tmp\latex-pandoc-filter-check.native
 ```
 
-修改 Word 转换脚本、图片预处理、兼容预处理、样式规范化或表格后处理后，建议运行 `.\convert-docx.ps1` 生成 `temp.docx` 做人工检查。生成的 `temp.docx` 是输出文件，通常不提交。
+修改 Word 转换脚本、图片预处理、兼容预处理、样式规范化或表格后处理后，建议运行当前平台的 `convert-docx.ps1` 或 `convert-docx.sh` 生成 `temp.docx` 做人工检查。生成的 `temp.docx` 是输出文件，通常不提交。
 
 ## Git 约定
 

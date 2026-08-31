@@ -26,7 +26,8 @@
 - 图片目录：`fig/`
 - Word 转换快捷入口：`.\convert-docx.ps1`
 - Linux Word 转换快捷入口：`./convert-docx.sh`
-- Word 转换主脚本：`scripts/tex-to-docx.py`
+- Word 转换包入口：`src/lpt_docx/cli.py`
+- 旧 Word 转换脚本兼容入口：`scripts/tex-to-docx.py`
 - Pandoc Lua filter：`filters/latex-crossref-cn.lua`
 - 英文 README：`README.md`
 - 中文 README：`docs/README.cn.md`
@@ -44,6 +45,7 @@
 
 维护转换流程时才改：
 
+- `src/lpt_docx/`
 - `scripts/`
 - `filters/`
 - `reference.docx`

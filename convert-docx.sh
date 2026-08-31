@@ -2,4 +2,4 @@
 set -euo pipefail
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-exec uv run python "$repo_root/scripts/tex-to-docx.py" "$@"
+exec uv run --project "$repo_root" lpt-docx "$@"

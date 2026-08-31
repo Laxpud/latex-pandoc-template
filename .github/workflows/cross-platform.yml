@@ -43,6 +43,16 @@ jobs:
       - name: Run tests
         run: uv run python -m unittest discover -s tests -v
 
+      - name: Build installable package
+        run: uv build
+
+      - name: Run installed CLI outside repository
+        working-directory: ${{ runner.temp }}
+        run: uv tool run --from "${{ github.workspace }}" lpt-docx "${{ github.workspace }}/temp.tex" --project-root "${{ github.workspace }}" --bibliography "${{ github.workspace }}/reference.bib" --output "${{ runner.temp }}/installed-cli.docx"
+
+      - name: Validate installed CLI output
+        run: uv run python -m zipfile -t "${{ runner.temp }}/installed-cli.docx"
+
       - name: Run Bash entry point
         if: runner.os == 'Linux'
         run: ./convert-docx.sh --output .pandoc-cache/ci-wrapper.docx

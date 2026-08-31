@@ -79,9 +79,11 @@ uv sync
 
 ### 转换入口与脚本
 
-- `convert-docx.ps1`：Windows Word 转换快捷入口，只负责调用 Python 核心并转发参数。
-- `convert-docx.sh`：Linux Word 转换快捷入口，与 PowerShell 入口行为一致。
-- `scripts/tex-to-docx.py`：跨平台 Word 转换主脚本，负责串联兼容预处理、图片预处理、Pandoc、表格后处理和样式规范化。
+- `src/lpt_docx/cli.py`：可安装 Python 包的命令行核心，提供 `lpt-docx` 命令，负责路径解析和整体流程编排。
+- `src/lpt_docx/resources/`：安装包中的资源命名空间。构建 wheel 时会把 Lua filter、CSL、`reference.docx` 和四个辅助脚本映射到该目录。
+- `convert-docx.ps1`：Windows Word 转换兼容入口，通过 `uv run --project` 调用包中的 `lpt-docx`。
+- `convert-docx.sh`：Linux Word 转换兼容入口，与 PowerShell 入口行为一致。
+- `scripts/tex-to-docx.py`：保留给旧命令的轻量兼容包装，实际实现从 `lpt_docx.cli` 导入。
 - `scripts/prepare-pandoc-compat.py`：兼容预处理脚本，展开少量常用宏，并为简单相对宽度子图保留 DOCX 布局信息；公式 SVG 渲染分支保留在脚本中但当前默认关闭。
 - `scripts/prepare-pandoc-images.py`：图片预处理脚本，把 LaTeX 中引用的 PDF 图片渲染为 PNG，并写入 Pandoc 临时输入文件。
 - `scripts/apply-docx-table-styles.py`：DOCX 表格与图片段落后处理脚本，直接修改 `word/document.xml`，为正文数据表补充三线表样式、按子图宽度重排 Pandoc 图片布局表，并统一图片段落样式。
@@ -92,9 +94,9 @@ uv sync
 
 - `.vscode/settings.json`：VS Code 和 LaTeX Workshop 的本项目编译配方。
 - `.github/workflows/cross-platform.yml`：在 Windows 和 Ubuntu 上运行测试并验证对应的 Word 转换入口。
-- `pyproject.toml`：Python 项目配置，声明 lxml、PyMuPDF 等脚本依赖。
+- `pyproject.toml`：Python 包配置，声明 `lpt-docx` 入口、Hatchling 构建后端、内置资源映射及 lxml、PyMuPDF 依赖。
 - `uv.lock`：uv 锁定文件，用于复现 Python 依赖环境。
-- `.pandoc-cache/`：Pandoc 转 Word 时生成的临时目录，包括临时 TeX 输入和缓存 PNG 图片。该目录被 Git 忽略。
+- `.pandoc-cache/`：Pandoc 转 Word 时位于当前论文项目中的缓存目录，包括持久图片缓存、公式缓存和每次转换的独立临时运行目录。该目录被 Git 忽略。
 - `.venv/`：uv 创建的本地 Python 虚拟环境。该目录被 Git 忽略。
 - `refference/`：原始期刊模板或参考材料目录。当前被 Git 忽略，名称沿用了仓库已有拼写。
 
@@ -192,7 +194,7 @@ LaTeX Workshop 工具参数中使用 `%DOC%` 和 `%DOCFILE%`：
 
 ## Word 转换链路
 
-推荐运行当前平台对应的根目录快捷脚本：
+仓库内推荐运行当前平台对应的兼容入口：
 
 ```powershell
 .\convert-docx.ps1
@@ -202,46 +204,55 @@ LaTeX Workshop 工具参数中使用 `%DOC%` 和 `%DOCFILE%`：
 ./convert-docx.sh
 ```
 
-两个入口只负责定位并调用同一个 Python 核心，同时原样转发命令行参数。直接调用方式为：
+两个入口都使用 `uv run --project <仓库根目录> lpt-docx`，因此依赖环境始终属于转换工具，而论文路径仍按命令的调用目录解析。仓库内的等价直接命令为：
 
 ```console
-uv run python scripts/tex-to-docx.py
+uv run lpt-docx
 ```
 
-无参数时使用项目推荐默认值：
+要从任意目录直接调用，可以把仓库安装为隔离的 uv 工具：
 
-- `--input = temp.tex`
-- `--output = temp.docx`
-- `--bibliography = reference.bib`
-- `--csl = gbt7714.csl`
-- `--reference-doc = reference.docx`
+```console
+uv tool install /path/to/latex-pandoc-template
+```
+
+开发期可以加 `--editable`。安装后的 `lpt-docx` 可执行入口由 `[project.scripts]` 生成；Python 依赖位于 uv 独立工具环境，Pandoc 仍作为系统外部命令从 `PATH` 查找。
+
+无参数时使用以下默认值：
+
+- 输入：调用目录中的 `temp.tex`。
+- 项目根目录：输入 TeX 文件所在目录。
+- 输出：输入文件同目录下的同名 `.docx`。
+- 参考文献：项目根目录中的 `reference.bib`。
+- CSL 和 Word 样式模板：安装包内置的 `gbt7714.csl` 和 `reference.docx`。
+- 缓存：项目根目录中的 `.pandoc-cache/`。
 - `--image-dpi = 300`
 
-默认路径以仓库根目录为基准；显式传入的相对路径以调用命令时的当前目录为基准。根目录两个快捷入口和 Python 核心接受同一组 `--...` 参数。
+主 TeX 可以作为位置参数，也可继续使用 `--input`。`--project-root` 用于主文件位于子目录的论文项目；`--bibliography` 和 `--resource-dir` 可重复使用。显式命令行路径相对于调用目录，TeX 中的图片路径相对于论文项目根目录和 `\graphicspath` 解析。
 
-`scripts/tex-to-docx.py` 的主要流程：
+`lpt_docx.cli` 的主要流程：
 
-1. 校验输入、参考文献、CSL、Word 样式模板、Lua filter 和 Pandoc 是否存在。
-2. 计算仓库根目录、缓存目录和当前平台的 Pandoc resource path。
-3. 调用 `scripts/prepare-pandoc-compat.py` 生成 `.pandoc-cache/compat/temp-compat.tex`。
-4. 调用 `scripts/prepare-pandoc-images.py` 生成 `.pandoc-cache/temp-pandoc.tex`。
-5. 让 Pandoc 先生成与目标文件同目录的临时 DOCX。
-6. 调用 `scripts/apply-docx-table-styles.py` 修正表格 Open XML。
-7. 调用 `scripts/namespace-reference-docx-styles.py` 规范化 DOCX 样式 ID。
-8. 全部步骤成功后用临时 DOCX 原子替换目标文件；失败时保留已有输出。
+1. 分别定位安装包资源和论文项目资源，校验输入、参考文献、CSL、Word 样式模板、Lua filter 和 Pandoc。
+2. 在项目 `.pandoc-cache/runs/` 中为当前转换创建唯一临时目录，避免两个文稿或并发运行共用固定中间文件。
+3. 调用内置 `prepare-pandoc-compat.py` 生成兼容预处理输入。
+4. 调用内置 `prepare-pandoc-images.py` 生成 Pandoc 输入，PDF 图片缓存保留在 `.pandoc-cache/images/`。
+5. 从主 TeX 目录、项目根目录、`fig/`、`refference/fig/`、`\graphicspath`、`--resource-dir` 和缓存目录组装 Pandoc resource path。
+6. 让 Pandoc 先生成与目标文件同目录的临时 DOCX。
+7. 调用内置表格后处理和样式规范化脚本。
+8. 全部步骤成功后原子替换目标文件，删除当次临时运行目录；失败时保留已有输出。
 
 Pandoc 核心参数包括：
 
-- 输入文件：`.pandoc-cache/temp-pandoc.tex`。
+- 输入文件：当次 `.pandoc-cache/runs/<input-hash>-*/pandoc.tex`。
 - 输出文件：由 `--output` 指定。
 - `--citeproc`：启用 Pandoc 内置参考文献处理。
-- `--lua-filter=filters/latex-crossref-cn.lua`：启用中文编号和样式处理。
-- `--bibliography=...`：指定 BibTeX 数据库。
-- `--csl=...`：指定 Word 侧参考文献样式。
-- `--resource-path=...`：包含仓库根目录、`fig`、`refference/fig`、图片缓存和公式缓存；Python 使用 `os.pathsep` 自动选择 Windows 的分号或 Linux 的冒号。
-- `--reference-doc=reference.docx`：指定 Word 样式模板。
+- `--lua-filter=...`：指向安装包内置 Lua filter。
+- `--bibliography=...`：每个 BibTeX 数据库生成一个独立参数。
+- `--csl=...`：默认指向安装包内置 CSL，可由命令行覆盖。
+- `--resource-path=...`：包含论文项目、动态图片目录和缓存；Python 使用 `os.pathsep` 自动选择 Windows 的分号或 Linux 的冒号。
+- `--reference-doc=...`：默认指向安装包内置 Word 样式模板，可由命令行覆盖。
 
-缓存目录 `.pandoc-cache/` 被 `.gitignore` 忽略，里面的内容可随时删除后重新生成。
+论文项目中的 `.pandoc-cache/` 应由该论文项目自行忽略。持久图片和公式缓存可随时删除后重建，`runs/` 中的临时目录会在每次转换结束后自动清理。
 
 
 ## 兼容预处理
@@ -262,7 +273,7 @@ Pandoc 核心参数包括：
 
 生成的中间文件和缓存分别位于：
 
-- `.pandoc-cache/compat/temp-compat.tex`：兼容预处理后的 LaTeX。
+- `.pandoc-cache/runs/<input-hash>-*/compat.tex`：当次转换的兼容预处理 LaTeX，运行结束后自动删除。
 - `.pandoc-cache/equations/`：实验性公式 SVG 分支使用的缓存目录。当前默认路径下通常不会生成新 SVG。
 
 当前不处理 `\nocite`、AHS 风格 `\abstract{...}`、`minipage` 表格和 `tbl:` 标签兼容。公式默认交给 Pandoc 生成 Word 原生 OMML；若重新启用 SVG 分支，需要重新检查公式图片与编号的基线对齐。
@@ -276,7 +287,8 @@ Word 不直接支持将 PDF 矢量图作为普通图片稳定写入 DOCX。为�
 - `--input`：源 TeX 文件。
 - `--output`：写给 Pandoc 使用的临时 TeX 文件。
 - `--cache-dir`：PNG 图片缓存目录。
-- `--base-dir`：相对图片路径的基准目录；当输入是 `.pandoc-cache/compat/temp-compat.tex` 时用于继续按仓库根目录解析 `fig/` 和 `\graphicspath`。
+- `--base-dir`：论文项目根目录；当输入是缓存中间文件时，仍按论文项目解析 `fig/` 和 `\graphicspath`。
+- `--source-dir`：原始主 TeX 文件所在目录，用于支持主文件位于项目子目录的情况。
 - `--dpi`：PDF 渲染 DPI，默认 300。
 
 脚本会扫描：
@@ -287,8 +299,8 @@ Word 不直接支持将 PDF 矢量图作为普通图片稳定写入 DOCX。为�
 查找 PDF 图片时会考虑：
 
 - `\includegraphics` 中直接写出的路径。
-- 当前 TeX 文件所在目录。
-- 默认 `fig/` 目录。
+- 原始主 TeX 文件所在目录。
+- 论文项目根目录及其默认 `fig/` 目录。
 - `\graphicspath` 中声明的目录。
 - 没写扩展名时，额外尝试 `.pdf`。
 
@@ -533,7 +545,7 @@ Lua filter 会在 Pandoc AST 层面为表头和表身单元格内容加样式：
 
 1. `\includegraphics` 中的文件名是否正确。
 2. 图片是否在 `fig/`、TeX 文件同目录或 `\graphicspath` 声明目录中。
-3. `scripts/tex-to-docx.py` 组装的 `--resource-path` 是否包含该目录。
+3. `lpt_docx.cli` 组装的 `--resource-path` 是否包含该目录，必要时用 `--resource-dir` 显式补充。
 4. 如果图片是 PDF，确认 `prepare-pandoc-images.py` 是否成功生成缓存 PNG。
 
 ### PDF 图片没有更新
@@ -585,7 +597,7 @@ PDF 侧检查：
 
 Word 侧检查：
 
-- `scripts/tex-to-docx.py` 是否向 Pandoc 传入 `--citeproc`。
+- `lpt_docx.cli` 是否向 Pandoc 传入 `--citeproc`。
 - `--bibliography` 是否指向 `reference.bib`。
 - `--csl` 是否指向 `gbt7714.csl`。
 - Pandoc 输出中是否存在 identifier 为 `refs` 的参考文献容器。
@@ -603,7 +615,7 @@ Word 侧检查：
 
 - README 只保留日常使用说明和关键入口。
 - 技术细节、脚本职责和样式系统说明集中放在本文档。
-- 修改转换流程时，同时检查两个根目录入口、`scripts/tex-to-docx.py` 和本文档。
+- 修改转换流程时，同时检查 `src/lpt_docx/cli.py`、两个根目录兼容入口、`scripts/tex-to-docx.py`、包内置资源映射和本文档。
 - 修改 Word 样式时，优先通过 `reference.docx` 和 `namespace-reference-docx-styles.py` 保持样式 ID 稳定。
 - 新增 Pandoc 样式时，同步维护 Lua filter 的 `styles` 表、`STYLE_ID_MAP` 和 `reference.docx`。
 - 新增支持的 LaTeX 写法时，先确认 Pandoc AST 输出形态，再决定是否修改 Lua filter。

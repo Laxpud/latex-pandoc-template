@@ -133,7 +133,7 @@ PDF 编译仍使用 TeX Live 提供的 XeLaTeX 和 BibTeX。
 - `gbt7714.bst` 和 `gbt7714.csl`：分别用于 PDF 和 Word 的参考文献格式。
 - `reference.docx`：Word 样式模板，只有需要调整 Word 输出样式时再改。
 - `.vscode/settings.json`：VS Code 编译配方，已经配置好 LaTeX Workshop。
-- `convert-docx.ps1`、`convert-docx.sh`、`scripts/` 和 `filters/`：Word 转换流程相关脚本，日常写作只需要运行，不需要修改。
+- `convert-docx.ps1`、`convert-docx.sh`、`src/lpt_docx/`、`scripts/` 和 `filters/`：Word 转换包与兼容脚本，日常写作只需要运行，不需要修改。
 - `.pandoc-cache/`、`.venv/` 和 LaTeX 辅助文件：自动生成内容，不需要手动维护，也不需要提交到 Git。
 
 ## 编译 PDF
@@ -174,8 +174,25 @@ Linux：
 两个入口都会调用同一份 Python 核心并生成 `temp.docx`，等价的直接命令为：
 
 ```console
-uv run python scripts/tex-to-docx.py --input temp.tex --output temp.docx --bibliography reference.bib --csl gbt7714.csl --reference-doc reference.docx
+uv run lpt-docx temp.tex --output temp.docx --bibliography reference.bib
 ```
+
+如果希望从任意论文目录调用转换器，可以一次性把本仓库安装为 uv 工具：
+
+```console
+uv tool install /path/to/latex-pandoc-template
+```
+
+如果 uv 提示可执行文件目录不在 `PATH` 中，运行 `uv tool update-shell` 后重新打开终端。开发期可以使用 `uv tool install --editable /path/to/latex-pandoc-template`，使已安装命令继续跟随当前工作区。
+
+安装完成后，进入任意论文目录即可运行：
+
+```console
+lpt-docx
+lpt-docx manuscript.tex --output manuscript-review.docx
+```
+
+无参数时，`lpt-docx` 读取当前目录的 `temp.tex`。项目根目录默认为输入文件所在目录，输出默认为同名 `.docx`，参考文献默认为项目根目录的 `reference.bib`，缓存写入论文项目的 `.pandoc-cache/`。CSL、Word 样式模板、Lua filter 和后处理脚本由安装包自带。
 
 脚本会自动完成这些步骤：
 
@@ -185,7 +202,7 @@ uv run python scripts/tex-to-docx.py --input temp.tex --output temp.docx --bibli
 - 为 Word 表格补充三线表边框和表格段落样式，并自动居中、按内容调整表格宽度。
 - 规范化 Word 文档中的项目样式 ID，使其使用 `Lpt...` 前缀。
 
-如果需要自定义输入、输出、参考文献、样式模板或图片 DPI，可以向任一根入口或 Python 命令传入 `--input`、`--output`、`--bibliography`、`--csl`、`--reference-doc` 或 `--image-dpi`。
+如果需要自定义输入、输出、项目根目录、参考文献、附加资源目录、样式模板、缓存目录或图片 DPI，可以传入 `--input`、`--output`、`--project-root`、`--bibliography`、`--resource-dir`、`--csl`、`--reference-doc`、`--cache-dir` 或 `--image-dpi`。`--bibliography` 和 `--resource-dir` 可重复使用。命令行中显式传入的相对路径按调用目录解析，TeX 正文内的资源路径按论文项目根目录和 `\graphicspath` 解析。
 
 ## Word 样式模板
 

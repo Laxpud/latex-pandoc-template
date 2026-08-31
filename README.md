@@ -133,7 +133,7 @@ These files usually do not need to be modified while drafting:
 - `gbt7714.bst` and `gbt7714.csl`: reference styles for PDF and Word output.
 - `reference.docx`: Word style template. Edit it only when you need to change Word output styles.
 - `.vscode/settings.json`: VS Code build recipes for LaTeX Workshop.
-- `convert-docx.ps1`, `convert-docx.sh`, `scripts/`, and `filters/`: Word conversion scripts. Run them during normal writing; do not edit them unless maintaining the conversion pipeline.
+- `convert-docx.ps1`, `convert-docx.sh`, `src/lpt_docx/`, `scripts/`, and `filters/`: Word conversion package and compatibility scripts. Run them during normal writing; do not edit them unless maintaining the conversion pipeline.
 - `.pandoc-cache/`, `.venv/`, and LaTeX auxiliary files: generated content. Do not maintain them manually and do not commit them.
 
 ## Compile PDF
@@ -174,8 +174,25 @@ On Linux:
 Both commands generate `temp.docx` and call the same Python core. The equivalent direct command is:
 
 ```console
-uv run python scripts/tex-to-docx.py --input temp.tex --output temp.docx --bibliography reference.bib --csl gbt7714.csl --reference-doc reference.docx
+uv run lpt-docx temp.tex --output temp.docx --bibliography reference.bib
 ```
+
+To make the converter available from any manuscript directory, install the repository as a uv tool once:
+
+```console
+uv tool install /path/to/latex-pandoc-template
+```
+
+If uv reports that its executable directory is not on `PATH`, run `uv tool update-shell` and open a new terminal. During development, `uv tool install --editable /path/to/latex-pandoc-template` keeps the installed command connected to the checkout.
+
+After installation, enter any manuscript directory and run:
+
+```console
+lpt-docx
+lpt-docx manuscript.tex --output manuscript-review.docx
+```
+
+With no arguments, `lpt-docx` reads `temp.tex` in the current directory. The project root defaults to the input file's directory, the output defaults to the same filename with a `.docx` suffix, the bibliography defaults to `reference.bib` in the project root, and the cache is written to the project's `.pandoc-cache/`. The CSL file, Word reference document, Lua filter, and postprocessing scripts are bundled with the installed tool.
 
 The script automatically:
 
@@ -185,7 +202,7 @@ The script automatically:
 - Adds three-line-table borders and table paragraph styles in Word, centers tables, and enables autofit width.
 - Normalizes project style IDs in the Word document to use the `Lpt...` prefix.
 
-For custom input, output, bibliography, style template, or image DPI, pass `--input`, `--output`, `--bibliography`, `--csl`, `--reference-doc`, or `--image-dpi` to either root shortcut or the Python command.
+For custom input, output, project root, bibliography, additional asset directory, style template, cache directory, or image DPI, pass `--input`, `--output`, `--project-root`, `--bibliography`, `--resource-dir`, `--csl`, `--reference-doc`, `--cache-dir`, or `--image-dpi`. `--bibliography` and `--resource-dir` may be repeated. Explicit relative command-line paths use the invocation directory; paths inside the TeX manuscript use the manuscript project root and `\graphicspath` entries.
 
 ## Word Style Template
 

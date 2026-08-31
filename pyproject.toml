@@ -2,14 +2,34 @@
 name = "latex-pandoc-template"
 version = "0.1.0"
 description = "Pandoc helpers for converting LaTeX manuscripts to Word."
+readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "lxml>=5.3.0",
     "PyMuPDF>=1.24.0",
 ]
 
+[project.scripts]
+lpt-docx = "lpt_docx.cli:main"
+
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
 [tool.uv]
-package = false
+package = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lpt_docx"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"filters/latex-crossref-cn.lua" = "lpt_docx/resources/latex-crossref-cn.lua"
+"gbt7714.csl" = "lpt_docx/resources/gbt7714.csl"
+"reference.docx" = "lpt_docx/resources/reference.docx"
+"scripts/apply-docx-table-styles.py" = "lpt_docx/resources/scripts/apply-docx-table-styles.py"
+"scripts/namespace-reference-docx-styles.py" = "lpt_docx/resources/scripts/namespace-reference-docx-styles.py"
+"scripts/prepare-pandoc-compat.py" = "lpt_docx/resources/scripts/prepare-pandoc-compat.py"
+"scripts/prepare-pandoc-images.py" = "lpt_docx/resources/scripts/prepare-pandoc-images.py"
 
 # 配置 uv 使用清华镜像源加速下载
 [[tool.uv.index]]

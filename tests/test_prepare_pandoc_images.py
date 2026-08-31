@@ -22,16 +22,36 @@ class PreparePandocImagesTests(unittest.TestCase):
         module = load_module()
         tex_dir = ROOT / ".pandoc-cache" / "compat"
         base_dir = ROOT
+        source_dir = ROOT / "manuscript"
 
         search_dirs = module.image_search_dirs(
             tex_text=r"\graphicspath{{fig/}{refference/fig/}}",
             tex_dir=tex_dir,
             base_dir=base_dir,
+            source_dir=source_dir,
         )
 
-        self.assertEqual(search_dirs[0], base_dir / "fig")
+        self.assertEqual(search_dirs[0], source_dir)
+        self.assertIn(base_dir, search_dirs)
+        self.assertIn(base_dir / "fig", search_dirs)
         self.assertIn(base_dir / "refference" / "fig", search_dirs)
         self.assertNotIn(tex_dir / "fig", search_dirs)
+
+    def test_project_root_resolves_explicit_relative_image_path(self):
+        module = load_module()
+        search_dirs = module.image_search_dirs(
+            tex_text="",
+            tex_dir=ROOT / ".pandoc-cache" / "runs" / "example",
+            base_dir=ROOT,
+        )
+
+        candidates = module.candidate_paths(
+            "fig/example-fig-2.png",
+            ROOT / ".pandoc-cache" / "runs" / "example",
+            search_dirs,
+        )
+
+        self.assertIn(ROOT / "fig" / "example-fig-2.png", candidates)
 
 
 if __name__ == "__main__":

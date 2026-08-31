@@ -11,6 +11,8 @@
 
 ## 转换兼容层
 
+- [x] 将 Word 转换工具重构为可安装的 Python 包。
+  - 验收标准：安装后可从任意目录运行 `lpt-docx`；工具内置 Lua filter、CSL 和 Word 样式模板；输入、参考文献、图片、缓存和输出路径都按论文项目解析；保留 PowerShell 与 Bash 兼容入口；Windows 和 Ubuntu 测试覆盖包安装及仓库外转换。
 - [x] 提供 Windows 和 Linux 共用的 Python Word 转换核心。
   - 验收标准：PowerShell 与 Bash 根入口调用同一 Python 核心；Linux 不安装 PowerShell 也能生成有效 DOCX；Windows 和 Ubuntu CI 均运行完整测试及各自入口。
 - [ ] 定稿编号公式转换策略。

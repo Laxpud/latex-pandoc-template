@@ -70,6 +70,7 @@ uv sync
 
 - [temp.tex](<../template/temp.tex>)：论文主文件，维护标题、作者及单位、摘要、关键词、正文、图表、公式和引用。
 - [reference.bib](<../template/reference.bib>)：PDF 和 Word 共用的参考文献数据库。
+- [论文 Word 样式模板](<../template/reference.docx>)：随论文复制，用户可在 Word 中修改当前论文的样式；不与工具后备文件共享修改。
 - [fig/](<../template/fig/>)：随论文保留的图片，包含示例 PNG、PDF 和 SVG 素材。
 - [gbt7714.bst](<../template/gbt7714.bst>)：PDF 编译所需的 BibTeX 样式，必须随论文复制。
 - [settings.json](<../template/.vscode/settings.json>)：随论文复制的 LaTeX Workshop 编译配方，使用当前文档名称而不是固定绝对路径。
@@ -89,9 +90,9 @@ uv sync
 - [namespace_reference_docx_styles.py](<../src/lpt_docx/namespace_reference_docx_styles.py>)：Word 项目样式、标题编号和引用规范化。
 - [latex-crossref-cn.lua](<../src/lpt_docx/resources/latex-crossref-cn.lua>)：Pandoc AST 上的语义修正和 Word 样式标记。
 - [gbt7714.csl](<../src/lpt_docx/resources/gbt7714.csl>)：Pandoc citeproc 使用的 GB/T 7714 样式。
-- [reference.docx](<../src/lpt_docx/resources/reference.docx>)：默认 Word 样式模板。
+- [后备 Word 样式模板](<../src/lpt_docx/resources/reference.docx>)：论文项目未提供自有样式且未显式指定时使用，确保旧论文仍可转换。
 
-所有转换模块和非 Python 资源都实际存放在 Python 包中。Hatchling 直接打包该目录，不再把根目录脚本映射到安装包，也不在运行时回退查找仓库外层文件。旧的根目录转换快捷入口和旧 Python 脚本入口已由 bin 入口替代；已安装的命令与现有参数保持兼容。
+所有转换模块及内置的非 Python 资源都实际存放在 Python 包中。Hatchling 直接打包该目录，不再把根目录脚本映射到安装包，也不在运行时回退查找仓库外层文件。旧的根目录转换快捷入口和旧 Python 脚本入口已由 bin 入口替代；已安装的命令与现有参数保持兼容。
 
 ### 依赖、缓存与生成文件
 
@@ -99,8 +100,9 @@ uv sync
 - [uv.lock](<../uv.lock>)：锁定依赖环境。
 - [cross-platform.yml](<../.github/workflows/cross-platform.yml>)：Windows、Ubuntu 的现有测试、安装包转换及仓库入口验证；Linux 入口通过软链调用。
 - 工具仓库的 `.venv/` 只服务转换器；论文项目的 `.pandoc-cache/` 保存图片、公式和当次转换缓存。
-- 同名 PDF、DOCX 及 `*.aux`、`*.bbl`、`*.blg`、`*.log` 等辅助文件生成在论文项目内，不复制回工具仓库。
-- 包内的 Word 样式模板和模板中的 PDF 原图属于源资源，不是应忽略的生成文档。
+- 日常生成的同名 PDF、DOCX 及 `*.aux`、`*.bbl`、`*.blg`、`*.log` 等辅助文件留在论文项目内。
+- [转换结果示例](<../examples/temp.docx>) 是明确保留的发布输出，独立于样式模板。更新时从仓库根目录运行 `uv run python -m lpt_docx template/temp.tex --output examples/temp.docx --cache-dir .pandoc-cache/example-output`，避免在可复制模板中留下生成物或缓存。
+- 包内后备 Word 样式、论文自有 Word 样式和 PDF 原图属于源资源；忽略规则只为这两份样式及指定的示例输出放行 DOCX，其他生成稿仍忽略。
 - 原有本地 `refference/` 目录继续沿用该拼写并保持忽略，但新模板不依赖它。
 
 ## LaTeX 写作层
@@ -219,7 +221,8 @@ uv tool install /path/to/latex-pandoc-template
 - 项目根目录：输入 TeX 文件所在目录。
 - 输出：输入文件同目录下的同名 `.docx`。
 - 参考文献：项目根目录中的 [reference.bib](<../template/reference.bib>)。
-- CSL 和 Word 样式模板：安装包内置的 [gbt7714.csl](<../src/lpt_docx/resources/gbt7714.csl>) 和 [reference.docx](<../src/lpt_docx/resources/reference.docx>)。
+- CSL：安装包内置的 [gbt7714.csl](<../src/lpt_docx/resources/gbt7714.csl>)。
+- Word 样式模板：优先使用论文项目根目录中的 [样式副本](<../template/reference.docx>)，不存在时使用 [包内后备模板](<../src/lpt_docx/resources/reference.docx>)。显式 `--reference-doc` 优先于这两者，其相对路径按调用目录解析。转换只读取输入样式文件，不将输出后处理写回模板。
 - 缓存：项目根目录中的 `.pandoc-cache/`。
 - `--image-dpi = 300`
 
@@ -245,7 +248,7 @@ Pandoc 核心参数包括：
 - `--bibliography=...`：每个 BibTeX 数据库生成一个独立参数。
 - `--csl=...`：默认指向安装包内置 CSL，可由命令行覆盖。
 - `--resource-path=...`：包含论文项目、动态图片目录和缓存；Python 使用 `os.pathsep` 自动选择 Windows 的分号或 Linux 的冒号。
-- `--reference-doc=...`：默认指向安装包内置 Word 样式模板，可由命令行覆盖。
+- `--reference-doc=...`：CLI 按显式参数、论文自有样式、包内后备模板的优先级解析后，传给 Pandoc 的最终 Word 样式路径。
 
 论文项目中的 `.pandoc-cache/` 应由该论文项目自行忽略。持久图片和公式缓存可随时删除后重建，`runs/` 中的临时目录会在每次转换结束后自动清理。
 
@@ -427,7 +430,7 @@ Lua filter 会在 Pandoc AST 层面为表头和表身单元格内容加样式：
 
 ## Word 样式系统
 
-[reference.docx](<../src/lpt_docx/resources/reference.docx>) 是 Pandoc 的 Word 样式模板。项目自定义样式统一使用 `Lpt...` 前缀，避免和 Word、Pandoc 或用户系统中的内置样式 ID 冲突。
+[论文样式模板](<../template/reference.docx>) 当前采用 [转换后的 Word 示例](<../examples/temp.docx>) 作为样式基准，复制后的论文可继续独立修改。[包内后备样式](<../src/lpt_docx/resources/reference.docx>) 单独保留，不随这次替换改变。Pandoc 使用 CLI 按优先级选出的文件读取样式和文档属性，不把参考文档的正文追加到手稿；输出后处理也不会改写输入模板。项目自定义样式统一使用 `Lpt...` 前缀，避免和 Word、Pandoc 或用户系统中的内置样式 ID 冲突。
 
 主要样式用途：
 
@@ -581,10 +584,10 @@ uv run python -m lpt_docx.namespace_reference_docx_styles src/lpt_docx/resources
 
 检查内容：
 
-- 是否使用了预期的 Word 样式模板；默认使用包内资源，需要自定义时通过 `--reference-doc` 指定。
-- [reference.docx](<../src/lpt_docx/resources/reference.docx>) 中是否存在对应的 `Lpt...` 样式。
+- 是否使用了预期的 Word 样式模板；先检查显式 `--reference-doc`，再检查论文项目根目录的样式文件，仅在没有项目文件时使用包内后备模板。
+- 当前实际使用的样式文件中是否存在对应的 `Lpt...` 样式。
 - 输出 DOCX 是否经过 [namespace_reference_docx_styles.py](<../src/lpt_docx/namespace_reference_docx_styles.py>)。
-- Lua filter 中的 `styles` 表是否和 [reference.docx](<../src/lpt_docx/resources/reference.docx>) 中的样式 ID 一致。
+- Lua filter 中的 `styles` 表是否和当前实际使用的 Word 样式文件中的样式 ID 一致。
 
 ### 参考文献异常
 
@@ -615,7 +618,7 @@ Word 侧检查：
 - README 只保留日常使用说明和关键入口。
 - 技术细节、脚本职责和样式系统说明集中放在本文档。
 - 修改转换流程时，同时检查 [cli.py](<../src/lpt_docx/cli.py>)、两个 bin 入口、包内模块和资源、构建配置及本文档。
-- 修改 Word 样式时，优先通过 [reference.docx](<../src/lpt_docx/resources/reference.docx>) 和 [namespace_reference_docx_styles.py](<../src/lpt_docx/namespace_reference_docx_styles.py>) 保持样式 ID 稳定。
-- 新增 Pandoc 样式时，同步维护 Lua filter 的 `styles` 表、`STYLE_ID_MAP` 和 [reference.docx](<../src/lpt_docx/resources/reference.docx>)。
+- 修改单篇论文的 Word 样式时，编辑论文自己的副本，不改包内后备文件；保持项目样式 ID 稳定，需要修复时可用 [namespace_reference_docx_styles.py](<../src/lpt_docx/namespace_reference_docx_styles.py>) 处理选定的样式文件。
+- 维护仓库初始样式或新增 Pandoc 样式时，同步维护 Lua filter 的 `styles` 表、`STYLE_ID_MAP`、包内后备模板和模板目录中的初始样式副本。
 - 新增支持的 LaTeX 写法时，先确认 Pandoc AST 输出形态，再决定是否修改 Lua filter。
 - 脚本行为发生变化后，优先用 [temp.tex](<../template/temp.tex>) 中的图、表、公式、引用和参考文献示例做回归检查。

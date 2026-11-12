@@ -14,20 +14,24 @@ This is a drafting and review workflow, not a final journal submission template.
 template/                    Copy this directory to start a paper
   temp.tex                   Manuscript source
   reference.bib              Bibliography
+  reference.docx             Editable Word style template for each paper
   gbt7714.bst                PDF bibliography style
   fig/                       Example figures
   .vscode/settings.json     LaTeX Workshop recipes
   .gitignore                 Generated-file exclusions
+  .gitattributes             Ordinary Git binary tracking for Word files
   LICENSE                    License notice for the copied template
 src/lpt_docx/                Conversion modules
   resources/                 Lua filter, CSL, and Word style template
 bin/                        Repository launchers
   lpt-docx                   Bash entry point; supports symbolic links
   lpt-docx.ps1               PowerShell entry point
+examples/                   Published conversion output
+  temp.docx                  Word review draft generated from the template
 tests/                      Existing conversion tests
 ```
 
-The copied template has everything needed for PDF compilation. Python code, the Lua filter, and Word conversion resources stay with the tool; they do not need to be copied into each paper.
+The copied template contains the PDF compilation files and an editable Word style template for that paper. Python code, the Lua filter, CSL, and a fallback Word style template stay with the tool; no conversion code needs to be copied into each paper.
 
 ## Requirements
 
@@ -112,9 +116,10 @@ In your copied paper directory, edit the equivalents of:
 
 - [temp.tex](<template/temp.tex>): title, authors, numbered affiliations, corresponding-author email, abstract, keywords, and body.
 - [reference.bib](<template/reference.bib>): bibliography entries.
+- [reference.docx](<template/reference.docx>): Word styles for this paper. Edit styles in Word; the converter automatically uses this project-local copy.
 - [fig/](<template/fig/>): figures to keep with the manuscript.
 
-The [BibTeX style](<template/gbt7714.bst>) stays with the paper for PDF compilation. The converter's [CSL](<src/lpt_docx/resources/gbt7714.csl>) and [Word style template](<src/lpt_docx/resources/reference.docx>) stay in the tool repository.
+The [BibTeX style](<template/gbt7714.bst>) and [paper Word styles](<template/reference.docx>) stay with the paper. The converter keeps its [CSL](<src/lpt_docx/resources/gbt7714.csl>) and [fallback Word styles](<src/lpt_docx/resources/reference.docx>) in the tool repository. Changing a paper's styles does not modify that fallback.
 
 ### Optional VS Code Workflow
 
@@ -128,7 +133,7 @@ The copied [editor settings](<template/.vscode/settings.json>) provide `latexmk`
 
 ## Conversion Options
 
-With no arguments, `lpt-docx` reads your copy of [temp.tex](<template/temp.tex>) in the current paper directory. The project root defaults to the input directory; output uses the input basename with a `.docx` suffix; bibliography defaults to the paper's [reference.bib](<template/reference.bib>); cache is written inside the paper's `.pandoc-cache/` directory. The converter takes its default Lua filter, CSL, and Word styles from its own package, not from the paper or the invocation directory.
+With no arguments, `lpt-docx` reads your copy of [temp.tex](<template/temp.tex>) in the current paper directory. The project root defaults to the input directory; output uses the input basename with a `.docx` suffix; bibliography defaults to the paper's [reference.bib](<template/reference.bib>); cache is written inside the paper's `.pandoc-cache/` directory. The default Lua filter and CSL come from the converter package. Word styles are selected in this order: an explicit `--reference-doc`, the paper project's [reference.docx](<template/reference.docx>), then the bundled fallback.
 
 All existing options remain available:
 
@@ -150,6 +155,14 @@ Without installing or linking a command, call a repository launcher by absolute 
 & "C:\tools\latex-pandoc-template\bin\lpt-docx.ps1" manuscript.tex
 ```
 
+## Converted Example
+
+[Converted Word example](<examples/temp.docx>) contains the output from the current manuscript and its project Word styles. It is separate from the editable style template and intentionally retained for preview. Regenerate it from the repository root:
+
+```console
+uv run python -m lpt_docx template/temp.tex --output examples/temp.docx --cache-dir .pandoc-cache/example-output
+```
+
 ## Writing Tips
 
 - Start from the supplied template and replace its example content incrementally; arbitrary journal templates may use unsupported commands.
@@ -161,7 +174,7 @@ Without installing or linking a command, call a repository launcher by absolute 
 
 ## Maintenance And Migration
 
-The previous root-level manuscript files now live in the template directory. Conversion modules and resources now live entirely under the [Python package](<src/lpt_docx/>). Old root-level conversion wrappers and the legacy script wrapper have been replaced by the bin launchers; existing installed `lpt-docx` commands and CLI arguments remain supported. Reinstall or upgrade an existing non-editable tool installation to use the refactored version.
+The previous root-level manuscript files now live in the template directory. Conversion modules and bundled fallback resources live under the [Python package](<src/lpt_docx/>), while editable paper Word styles are copied with the template. Old root-level conversion wrappers and the legacy script wrapper have been replaced by the bin launchers; existing installed `lpt-docx` commands and CLI arguments remain supported. Reinstall or upgrade an existing non-editable tool installation to use the refactored version.
 
 For development, run from the repository root:
 
@@ -177,7 +190,7 @@ To repair the bundled Word style template after replacing it, run from the repos
 uv run python -m lpt_docx.namespace_reference_docx_styles src/lpt_docx/resources/reference.docx
 ```
 
-Generated documents, LaTeX auxiliary files, Python environments, and caches are not source assets. The [template ignore rules](<template/.gitignore>) travel with each copied paper; original PDF figures remain versionable. See [Technical Notes](<docs/technical-stack.md>) for style maintenance and troubleshooting.
+Word templates and the published example use ordinary Git with `*.docx binary`, not Git LFS. The [paper attributes](<template/.gitattributes>) carry this rule into copied projects. Generated documents, LaTeX auxiliary files, Python environments, and caches are normally ignored. The published Word example is an explicit exception. The [template ignore rules](<template/.gitignore>) travel with each copied paper; its editable Word styles and original PDF figures remain versionable. See [Technical Notes](<docs/technical-stack.md>) for style maintenance and troubleshooting.
 
 ## Contributing
 

@@ -1,2 +1,3 @@
 *.sh text eol=lf
 bin/lpt-docx text eol=lf
+*.docx binary

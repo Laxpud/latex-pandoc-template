@@ -32,6 +32,9 @@
 __pycache__/
 *.pyc
 
+# Word 样式模板属于论文源文件，需要随论文保留。
+!reference.docx
+
 # PDF 原始图片属于论文素材，需要保留。
 !fig/*.pdf
 !fig/**/*.pdf

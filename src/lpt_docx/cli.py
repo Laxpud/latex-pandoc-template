@@ -1,6 +1,6 @@
 """将论文项目的 LaTeX 输入转换为带项目样式的 Word 审阅稿。
 
-转换模块与默认样式由本包提供；论文输入、图片、缓存和输出属于调用方
+转换模块与后备样式由本包提供；论文输入、项目样式、图片、缓存和输出属于调用方
 的论文项目，两者不通过切换当前工作目录或仓库外层路径相互依赖。
 """
 
@@ -100,7 +100,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--reference-doc",
         type=Path,
-        help="Override the bundled Word reference document.",
+        help="Override PROJECT/reference.docx or the bundled Word style template.",
     )
     parser.add_argument(
         "--cache-dir",
@@ -139,7 +139,7 @@ def unique_paths(paths: Sequence[Path]) -> tuple[Path, ...]:
 
 
 def load_tool_resources() -> ToolResources:
-    """定位包内的默认资源；源码运行和 wheel 安装使用相同目录结构。"""
+    """定位包内资源与后备样式；源码运行和 wheel 安装使用相同目录结构。"""
 
     return ToolResources(
         lua_filter=RESOURCE_ROOT / "latex-crossref-cn.lua",
@@ -175,11 +175,15 @@ def resolve_project_paths(
         if args.csl is not None
         else resources.csl
     )
-    reference_doc = (
-        resolve_cli_path(args.reference_doc, invocation_dir)
-        if args.reference_doc is not None
-        else resources.reference_doc
-    )
+    # 显式参数优先；未指定时使用论文项目自己的样式，方便每篇论文独立调整。
+    # 只有项目没有样式模板时才使用包内后备文件，不修改任何输入样式文件。
+    project_reference_doc = project_root / "reference.docx"
+    if args.reference_doc is not None:
+        reference_doc = resolve_cli_path(args.reference_doc, invocation_dir)
+    elif project_reference_doc.is_file():
+        reference_doc = project_reference_doc
+    else:
+        reference_doc = resources.reference_doc
     cache_dir = (
         resolve_cli_path(args.cache_dir, invocation_dir)
         if args.cache_dir is not None

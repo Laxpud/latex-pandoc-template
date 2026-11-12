@@ -31,6 +31,8 @@
 *.docx
 *.pdf
 !src/lpt_docx/resources/reference.docx
+!template/reference.docx
+!examples/temp.docx
 !template/fig/*.pdf
 !template/fig/**/*.pdf
 .pandoc-cache/

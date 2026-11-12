@@ -14,20 +14,24 @@
 template/                    新建论文时复制整个目录
   temp.tex                   论文主文件
   reference.bib              参考文献数据库
+  reference.docx             每篇论文可独立修改的 Word 样式模板
   gbt7714.bst                PDF 参考文献样式
   fig/                       示例图片
   .vscode/settings.json     LaTeX Workshop 编译配方
   .gitignore                 生成文件忽略规则
+  .gitattributes             Word 文件使用普通 Git 二进制管理
   LICENSE                    随模板复制的许可说明
 src/lpt_docx/                转换模块
   resources/                 Lua filter、CSL 和 Word 样式模板
 bin/                        仓库调用入口
   lpt-docx                   Bash 入口，支持软链
   lpt-docx.ps1               PowerShell 入口
+examples/                   保留的转换结果
+  temp.docx                  由当前模板生成的 Word 审阅稿
 tests/                      现有转换测试
 ```
 
-复制后的模板已包含 PDF 编译所需的论文文件。Python 代码、Lua filter 和 Word 转换资源由工具统一维护，不需要再复制到每篇论文里。
+复制后的模板已包含 PDF 编译所需的文件和可独立修改的 Word 样式模板。Python 代码、Lua filter、CSL 和后备 Word 样式模板由工具统一维护，不需要把转换代码复制到每篇论文里。
 
 ## 环境准备
 
@@ -112,9 +116,10 @@ lpt-docx manuscript.tex --output manuscript-review.docx
 
 - [temp.tex](<../template/temp.tex>)：标题、作者、编号单位、通讯作者邮箱、摘要、关键词和正文。
 - [reference.bib](<../template/reference.bib>)：参考文献条目。
+- [reference.docx](<../template/reference.docx>)：当前论文的 Word 样式，可在 Word 中自行修改，转换器会自动使用这份项目内副本。
 - [fig/](<../template/fig/>)：需要随论文保留的图片。
 
-[BibTeX 样式](<../template/gbt7714.bst>) 随论文复制，用于 PDF 编译。转换器的 [CSL](<../src/lpt_docx/resources/gbt7714.csl>) 和 [Word 样式模板](<../src/lpt_docx/resources/reference.docx>) 则保留在工具仓库中。
+[BibTeX 样式](<../template/gbt7714.bst>) 和 [论文 Word 样式](<../template/reference.docx>) 随论文一起复制。转换器的 [CSL](<../src/lpt_docx/resources/gbt7714.csl>) 和 [后备 Word 样式](<../src/lpt_docx/resources/reference.docx>) 则保留在工具仓库中；修改论文自己的样式不会影响后备模板。
 
 ### 可选的 VS Code 写作流程
 
@@ -128,7 +133,7 @@ code .
 
 ## 转换选项
 
-无参数时，`lpt-docx` 读取当前论文目录中的 [temp.tex](<../template/temp.tex>) 副本。项目根目录默认为输入文件所在目录，输出使用输入文件名加 `.docx` 后缀，参考文献默认使用论文自带的 [reference.bib](<../template/reference.bib>)，缓存写入论文项目的 `.pandoc-cache/`。默认 Lua filter、CSL 和 Word 样式来自转换器自身的包，而不是论文目录或命令调用目录。
+无参数时，`lpt-docx` 读取当前论文目录中的 [temp.tex](<../template/temp.tex>) 副本。项目根目录默认为输入文件所在目录，输出使用输入文件名加 `.docx` 后缀，参考文献默认使用论文自带的 [reference.bib](<../template/reference.bib>)，缓存写入论文项目的 `.pandoc-cache/`。默认 Lua filter 和 CSL 来自转换器自身的包。Word 样式按以下优先级选择：显式 `--reference-doc`、论文项目中的 [reference.docx](<../template/reference.docx>)、包内后备模板。
 
 现有命令行选项保持可用：
 
@@ -150,6 +155,14 @@ lpt-docx tex/paper.tex --project-root . --resource-dir extra-assets
 & "C:\tools\latex-pandoc-template\bin\lpt-docx.ps1" manuscript.tex
 ```
 
+## 转换结果示例
+
+[转换后的 Word 示例](<../examples/temp.docx>) 由当前论文模板及其项目内 Word 样式生成，独立于可编辑的样式模板，专门保留供预览。在仓库根目录重新生成：
+
+```console
+uv run python -m lpt_docx template/temp.tex --output examples/temp.docx --cache-dir .pandoc-cache/example-output
+```
+
 ## 写作建议
 
 - 从现有模板逐步替换示例内容；任意期刊模板可能使用转换器不支持的命令。
@@ -161,7 +174,7 @@ lpt-docx tex/paper.tex --project-root . --resource-dir extra-assets
 
 ## 维护与迁移
 
-原先位于仓库根目录的论文文件现已归入模板目录；转换模块与资源全部归入 [Python 包](<../src/lpt_docx/>)。旧的根目录转换入口和旧 Python 脚本入口由 bin 入口替代；已安装的 `lpt-docx` 命令及命令行参数保持支持。原先以非 editable 方式安装的工具，需要重新安装或升级才能使用重构后的版本。
+原先位于仓库根目录的论文文件现已归入模板目录；转换模块及内置后备资源归入 [Python 包](<../src/lpt_docx/>)，可编辑的论文 Word 样式则随模板一起复制。旧的根目录转换入口和旧 Python 脚本入口由 bin 入口替代；已安装的 `lpt-docx` 命令及命令行参数保持支持。原先以非 editable 方式安装的工具，需要重新安装或升级才能使用重构后的版本。
 
 开发时在仓库根目录运行：
 
@@ -177,7 +190,7 @@ uv build
 uv run python -m lpt_docx.namespace_reference_docx_styles src/lpt_docx/resources/reference.docx
 ```
 
-生成文档、LaTeX 辅助文件、Python 环境和缓存不属于源文件。[模板忽略规则](<../template/.gitignore>) 会随论文一起复制；原始 PDF 图片仍可纳入版本控制。样式维护与排错方法见 [技术说明](<technical-stack.md>)。
+Word 样式模板及发布的示例使用普通 Git，通过 `*.docx binary` 明确按二进制管理，不使用 Git LFS；[论文属性规则](<../template/.gitattributes>) 会随目录复制到新项目。生成文档、LaTeX 辅助文件、Python 环境和缓存通常忽略，专门发布的 Word 示例是明确的例外。[模板忽略规则](<../template/.gitignore>) 会随论文一起复制；可编辑的 Word 样式与原始 PDF 图片仍可纳入版本控制。样式维护与排错方法见 [技术说明](<technical-stack.md>)。
 
 ## 参与贡献
 

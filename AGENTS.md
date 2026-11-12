@@ -29,7 +29,9 @@
 - Windows 仓库入口：[lpt-docx.ps1](<bin/lpt-docx.ps1>)。
 - Python 包入口：[cli.py](<src/lpt_docx/cli.py>)、[__main__.py](<src/lpt_docx/__main__.py>)。
 - Pandoc filter：[latex-crossref-cn.lua](<src/lpt_docx/resources/latex-crossref-cn.lua>)。
-- Word 样式：[reference.docx](<src/lpt_docx/resources/reference.docx>)。
+- 论文 Word 样式：[样式模板](<template/reference.docx>)，随论文复制并允许独立修改。
+- 后备 Word 样式：[包内模板](<src/lpt_docx/resources/reference.docx>)，用于没有自有样式的论文。
+- 转换后的 Word 示例：[temp.docx](<examples/temp.docx>)。
 - Word 参考文献样式：[gbt7714.csl](<src/lpt_docx/resources/gbt7714.csl>)。
 
 ## 文件边界
@@ -46,14 +48,14 @@
 - `src/lpt_docx/resources/`：随包分发的非 Python 资源。
 - `bin/`：只负责定位工具环境并调用统一包入口，不重复实现转换逻辑。
 
-源码运行与安装包使用同一套包内资源，不增加依赖仓库外层文件的运行时回退。Bash 入口必须支持绝对和相对软链，并保留论文调用目录。
+源码运行与安装包使用同一套包内资源，不增加依赖仓库外层文件的运行时回退。Word 样式按显式 `--reference-doc`、论文项目内样式、包内后备模板的顺序选择，只读输入样式，不将输出后处理写回模板。Bash 入口必须支持绝对和相对软链，并保留论文调用目录。
 
 以下属于生成物或本地环境，通常不提交：
 
 - 生成 PDF、DOCX 和 LaTeX 辅助文件。
 - 论文项目的 `.pandoc-cache/`、工具的 `.venv/`、`dist/` 和 `__pycache__/`。
 
-例外是包内 Word 样式模板和模板图片目录中的原始 PDF 素材。仓库与复制后的论文分别使用 [.gitignore](<.gitignore>) 和 [模板忽略规则](<template/.gitignore>)。
+例外是包内后备 Word 样式、论文模板中的可编辑 Word 样式、模板图片目录中的原始 PDF 素材，以及明确保留供预览的 [Word 转换示例](<examples/temp.docx>)。其他生成稿仍忽略。仓库与复制后的论文分别使用 [.gitignore](<.gitignore>) 和 [模板忽略规则](<template/.gitignore>)。
 
 原有本地 `refference/` 沿用既有拼写，不擅自改为 `reference/`；新模板不依赖该目录，旧论文仍可通过自己的图片路径使用它。
 

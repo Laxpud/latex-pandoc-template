@@ -1,0 +1,37 @@
+# 编译辅助文件和生成文档不随论文项目提交。
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.bbl
+*.blg
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+*.nav
+*.snm
+*.vrb
+*.run.xml
+*.bcf
+*.xdv
+*.glo
+*.gls
+*.glg
+*.ist
+*.idx
+*.ilg
+*.ind
+*.acn
+*.acr
+*.alg
+*.pdf
+*.docx
+.pandoc-cache/
+__pycache__/
+*.pyc
+
+# PDF 原始图片属于论文素材，需要保留。
+!fig/*.pdf
+!fig/**/*.pdf

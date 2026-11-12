@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# 1. 沿软链逐级找到仓库中的真实入口；相对软链以各自所在目录为基准。
+# 所有 cd 都在命令替换的子 shell 中执行，不改变用户当前的论文目录。
+source_path="${BASH_SOURCE[0]}"
+while [[ -L "$source_path" ]]; do
+    source_dir="$(cd -P -- "$(dirname -- "$source_path")" && pwd)"
+    target="$(readlink -- "$source_path")"
+    if [[ "$target" == /* ]]; then
+        source_path="$target"
+    else
+        source_path="$source_dir/$target"
+    fi
+done
+repo_root="$(cd -P -- "$(dirname -- "$source_path")/.." && pwd)"
+
+# 2. 使用工具仓库自己的 uv 环境，输入与输出仍由调用时的论文目录决定。
+if ! command -v uv >/dev/null 2>&1; then
+    printf '%s\n' 'lpt-docx: uv was not found on PATH. Install uv before running this launcher.' >&2
+    exit 127
+fi
+exec uv run --project "$repo_root" python -m lpt_docx "$@"

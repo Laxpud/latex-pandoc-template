@@ -8,7 +8,7 @@
 
 ## Archived Plans
 
-- [Reference Entry Draft](archive/reference-entry-draft.md)：`reference.bib` 示例条目的历史设计草案。它保留为背景材料，不是当前活动 TODO。
+- [Reference Entry Draft](archive/reference-entry-draft.md)：[reference.bib](<../template/reference.bib>) 示例条目的历史设计草案。它保留为背景材料，不是当前活动 TODO。
 
 ## Documentation Ownership
 

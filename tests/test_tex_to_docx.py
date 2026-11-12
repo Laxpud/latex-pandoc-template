@@ -1,4 +1,3 @@
-import importlib.util
 import argparse
 import shutil
 import subprocess
@@ -9,23 +8,15 @@ import zipfile
 from pathlib import Path
 
 import pymupdf as fitz
+from lpt_docx import cli
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SCRIPT_PATH = ROOT / "scripts" / "tex-to-docx.py"
-
-
-def load_module():
-    spec = importlib.util.spec_from_file_location("tex_to_docx", SCRIPT_PATH)
-    module = importlib.util.module_from_spec(spec)
-    assert spec.loader is not None
-    spec.loader.exec_module(module)
-    return module
 
 
 class TexToDocxTests(unittest.TestCase):
     def setUp(self):
-        self.module = load_module()
+        self.module = cli
 
     def test_positive_image_dpi_validation(self):
         self.assertEqual(self.module.positive_int("300"), 300)
@@ -66,10 +57,6 @@ class TexToDocxTests(unittest.TestCase):
             resources.lua_filter,
             resources.csl,
             resources.reference_doc,
-            resources.compat_script,
-            resources.image_script,
-            resources.table_style_script,
-            resources.style_normalizer_script,
         ):
             self.assertTrue(path.is_file(), path)
 
@@ -79,7 +66,7 @@ class TexToDocxTests(unittest.TestCase):
             assets_dir = temp_path / "assets"
             assets_dir.mkdir(parents=True)
             shutil.copyfile(
-                ROOT / "fig" / "example-fig-2.png",
+                ROOT / "template" / "fig" / "example-fig-2.png",
                 assets_dir / "raster.png",
             )
             with fitz.open() as pdf:
@@ -125,7 +112,8 @@ External citation \\cite{external2026}.
             result = subprocess.run(
                 [
                     sys.executable,
-                    str(SCRIPT_PATH),
+                    "-m",
+                    "lpt_docx",
                     "-o",
                     str(output_docx),
                 ],
@@ -150,7 +138,8 @@ External citation \\cite{external2026}.
             result = subprocess.run(
                 [
                     sys.executable,
-                    str(SCRIPT_PATH),
+                    "-m",
+                    "lpt_docx",
                     "--input",
                     str(temp_path / "missing.tex"),
                     "--output",

@@ -1,236 +1,184 @@
 # LaTeX Pandoc Manuscript Template
 
-- 🌐 **[中文 README](docs/README.cn.md)**: Chinese guide for this template.
-- 🗺️ **[Technical Docs Index](docs/index.md)**: Technical notes, maintenance docs, and archived plans.
-- 🛠️ **[Technical Stack and Implementation Notes](docs/technical-stack.md)**: File responsibilities, conversion pipeline, scripts, and maintenance notes.
-- ✅ **[Project TODO](TODO.md)**: Active documentation and conversion work.
-- 🤝 **[Contributing](#contributing)**: Report issues, share use cases, or help improve the template.
+- 🌐 **[中文 README](<docs/README.cn.md>)**: Chinese guide.
+- 🛠️ **[Technical Notes](<docs/technical-stack.md>)**: Conversion internals, styles, and troubleshooting.
+- 🗺️ **[Documentation Index](<docs/index.md>)** · ✅ **[Project TODO](<TODO.md>)**
 
-This is a minimal LaTeX template for drafting academic manuscripts. It keeps common paper structures such as title, authors and affiliations, abstract, keywords, sections, figures, tables, equations, cross references, and references, while avoiding complex journal-specific layout commands so the manuscript can be converted to a Word review draft with Pandoc.
+A minimal LaTeX manuscript template and a reusable Pandoc-to-Word converter. Copy the [template directory](<template/>) for each new paper; keep the converter in this repository and call it from your manuscript directory. Authors and affiliations, abstract, keywords, figures, tables, equations, citations, and cross references are retained without requiring a journal-specific class.
 
-If this template helps you avoid some LaTeX-to-Word conversion pain, please consider starring the repository. Issues, usage stories, and contributions are also welcome.
+This is a drafting and review workflow, not a final journal submission template. If it helps, stars, issues, and contributions are welcome.
 
-## What This Is For
+## Repository Layout
 
-- Drafting a manuscript in `temp.tex`.
-- Compiling a PDF with XeLaTeX to check equations, figures, and references.
-- Converting the manuscript to Word for advisor, collaborator, or internal review.
-- Moving the finished draft to a target journal template later.
+```text
+template/                    Copy this directory to start a paper
+  temp.tex                   Manuscript source
+  reference.bib              Bibliography
+  gbt7714.bst                PDF bibliography style
+  fig/                       Example figures
+  .vscode/settings.json     LaTeX Workshop recipes
+  .gitignore                 Generated-file exclusions
+  LICENSE                    License notice for the copied template
+src/lpt_docx/                Conversion modules
+  resources/                 Lua filter, CSL, and Word style template
+bin/                        Repository launchers
+  lpt-docx                   Bash entry point; supports symbolic links
+  lpt-docx.ps1               PowerShell entry point
+tests/                      Existing conversion tests
+```
 
-## Environment
+The copied template has everything needed for PDF compilation. Python code, the Lua filter, and Word conversion resources stay with the tool; they do not need to be copied into each paper.
 
-Required tools:
+## Requirements
 
-- TeX Live, with `xelatex` and `bibtex` available. Official download page: [TeX Live](https://www.tug.org/texlive/acquire.html).
-- Pandoc. Official download page: [Installing pandoc](https://pandoc.org/installing.html).
-- uv, used to create the Python environment and run the conversion scripts. Official installation page: [Installing uv](https://docs.astral.sh/uv/getting-started/installation/).
-- PowerShell on Windows, or Bash on Linux. Windows includes PowerShell, and common Linux distributions include Bash.
+- TeX Live with `xelatex` and `bibtex` for PDF compilation: [TeX Live](https://www.tug.org/texlive/acquire.html).
+- Pandoc for Word conversion: [Installing Pandoc](https://pandoc.org/installing.html).
+- uv for the converter's Python environment: [Installing uv](https://docs.astral.sh/uv/getting-started/installation/).
+- Bash on Linux, or PowerShell on Windows for the corresponding repository launcher.
 
-Git is optional. If you do not want to install Git, you can download the repository as a ZIP file from GitHub. Official download page: [Git Downloads](https://git-scm.com/downloads/).
-
-The Word conversion pipeline is tested automatically on Windows and Ubuntu with:
-
-- Pandoc 3.8.3, Lua 5.4.
-- uv 0.11.32 and Python 3.10.
-- Python dependencies: `lxml>=5.3.0` and `PyMuPDF>=1.24.0`.
-
-PDF compilation remains based on XeLaTeX and BibTeX from TeX Live.
-
-For detailed file descriptions, conversion internals, and maintenance notes, see [Technical Stack and Implementation Notes](docs/technical-stack.md).
+The existing CI targets Windows and Ubuntu with Pandoc 3.8.3, Lua 5.4, uv 0.11.32, and Python 3.10. Python dependencies are `lxml>=5.3.0` and `PyMuPDF>=1.24.0`; uv prepares them automatically. PDF compilation uses the local TeX Live installation.
 
 ## Quick Start
 
-The steps below assume a fresh local directory. Commands that differ between Windows and Linux are shown separately.
-
-Start with this repository's `temp.tex` and replace its example content incrementally. The conversion pipeline is designed around the constrained LaTeX subset used by this template; starting from an unrelated journal or custom template may introduce structures that the compatibility preprocessing or DOCX postprocessing cannot handle reliably.
-
-1. Get the project files.
-
-   If Git is installed, `git clone` is recommended:
-
-   ```powershell
-   git clone https://github.com/Laxpud/latex-pandoc-template.git
-   cd latex-pandoc-template
-   ```
-
-   If Git is not installed, download the project manually:
-
-   1. Open <https://github.com/Laxpud/latex-pandoc-template>.
-   2. Click `Code`.
-   3. Choose `Download ZIP`.
-   4. Extract the ZIP file.
-   5. In a terminal, enter the extracted `latex-pandoc-template` folder.
-
-2. Install the Word converter as a uv tool:
-
-   ```powershell
-   uv tool install .
-   ```
-
-   This installs the isolated Python dependencies and makes `lpt-docx` available from any manuscript directory. If uv reports that its executable directory is not on `PATH`, run `uv tool update-shell` and open a new terminal. Repository maintainers can additionally run `uv sync` to create `.venv/` for tests and development.
-
-3. Compile the example manuscript from the project directory:
-
-   ```console
-   xelatex -interaction=nonstopmode temp.tex
-   bibtex temp
-   xelatex -interaction=nonstopmode temp.tex
-   xelatex -interaction=nonstopmode temp.tex
-   ```
-
-   A successful build produces `temp.pdf`.
-
-4. Convert the manuscript to a Word review draft:
-
-   ```console
-   lpt-docx
-   ```
-
-   A successful conversion produces `temp.docx`. The repository shortcuts `.\convert-docx.ps1` and `./convert-docx.sh` remain available if you prefer not to install a user-level command.
-
-5. Start replacing the example content.
-
-   Focus first on `temp.tex`, `reference.bib`, and `fig/`. It is best to keep the example section, figure, table, equation, and reference structure at the beginning, then gradually replace it with your own paper content.
-
-## Files To Edit First
-
-If you are new to LaTeX, you usually only need to focus on:
-
-- [temp.tex](<temp.tex>): the manuscript source. Edit the title, authors, affiliations, corresponding-author email, abstract, keywords, sections, figures, tables, equations, and citations here.
-- `reference.bib`: the BibTeX reference database. Add journal papers, books, web pages, and other references here.
-- `fig/`: the figure directory. Put the PNG, JPG, or PDF images used by the manuscript here.
-
-Start by replacing the examples in `temp.tex`. Avoid changing the preamble or conversion scripts at the beginning. For detailed file responsibilities, see [Technical Stack and Implementation Notes](docs/technical-stack.md).
-
-### Optional VS Code Workflow
-
-If you prefer a graphical editor, install [VS Code](https://code.visualstudio.com/download) and the [LaTeX Workshop](https://marketplace.visualstudio.com/items?itemName=James-Yu.latex-workshop) extension. Then open the project from a terminal:
+### 1. Get the repository
 
 ```console
-code .
+git clone https://github.com/Laxpud/latex-pandoc-template.git
+cd latex-pandoc-template
 ```
 
-If the `code` command is unavailable, open VS Code first, choose `File -> Open Folder...`, and select the project folder. The provided `.vscode/settings.json` is loaded automatically and normally does not need to be edited. It includes two LaTeX Workshop recipes:
+Without Git, download and extract the repository using `Code -> Download ZIP` on [GitHub](https://github.com/Laxpud/latex-pandoc-template).
 
-- `latexmk`: uses `latexmk -xelatex` to handle multi-pass compilation automatically.
-- `xelatex -> bibtex -> xelatex*2`: explicitly runs the full bibliography compilation sequence.
+### 2. Make the converter available
 
-Automatic builds are disabled with `latex-workshop.latex.autoBuild.run = never`, so opening or saving a file does not repeatedly trigger compilation. To build `temp.pdf`, open `temp.tex`, run `LaTeX Workshop: Build with recipe` from the command palette, and choose either recipe.
+On Linux, link the [Bash launcher](<bin/lpt-docx>) into your personal bin directory from the repository root:
 
-## Files To Notice But Usually Not Edit
+```bash
+mkdir -p "$HOME/bin"
+ln -s "$(pwd)/bin/lpt-docx" "$HOME/bin/lpt-docx"
+export PATH="$HOME/bin:$PATH"
+```
 
-These files usually do not need to be modified while drafting:
+Use any personal bin directory already on your `PATH`. Add the `PATH` setting to your shell configuration if needed. The command intentionally does not overwrite an existing link or executable. Keep the repository available while using this link; the launcher follows absolute or relative symlink chains, locates the tool environment, and leaves your manuscript working directory unchanged.
 
-- `gbt7714.bst` and `gbt7714.csl`: reference styles for PDF and Word output.
-- `reference.docx`: Word style template. Edit it only when you need to change Word output styles.
-- `convert-docx.ps1`, `convert-docx.sh`, `src/lpt_docx/`, `scripts/`, and `filters/`: Word conversion package and compatibility scripts. Run them during normal writing; do not edit them unless maintaining the conversion pipeline.
-- `.pandoc-cache/`, `.venv/`, and LaTeX auxiliary files: generated content. Do not maintain them manually and do not commit them.
+On Windows, or if you prefer an installed command on either platform:
 
-## Compile PDF
+```console
+uv tool install .
+```
 
-Run the full sequence from the repository root on either platform:
+If uv's executable directory is not on `PATH`, run `uv tool update-shell` and open a new terminal. The installed command and repository launchers use the same Python package.
+
+### 3. Copy the template for a new paper
+
+Linux, from the repository root:
+
+```bash
+cp -a template ../my-paper
+cd ../my-paper
+```
+
+Windows PowerShell:
+
+```powershell
+Copy-Item -Recurse template ..\my-paper
+Set-Location ..\my-paper
+```
+
+Choose a new destination directory, then replace the example content. Hidden editor settings and generated-file exclusions are copied too. You can rename the paper directory freely; if you also rename the main TeX file, pass its new name to the converter.
+
+### 4. Compile PDF and convert to Word
+
+Run these commands inside your copied paper directory:
 
 ```console
 xelatex -interaction=nonstopmode temp.tex
 bibtex temp
 xelatex -interaction=nonstopmode temp.tex
 xelatex -interaction=nonstopmode temp.tex
+lpt-docx
 ```
 
-The result is `temp.pdf`. If references or labels have not changed, one or two XeLaTeX runs are often enough.
-
-## Convert To Word
-
-If you completed the uv tool installation in Quick Start, enter a manuscript directory and run:
+The PDF and Word review draft are created beside the main TeX file. For a renamed manuscript:
 
 ```console
-lpt-docx
+lpt-docx manuscript.tex
 lpt-docx manuscript.tex --output manuscript-review.docx
 ```
 
-With no arguments, `lpt-docx` reads `temp.tex` in the current directory. The project root defaults to the input file's directory, the output defaults to the same filename with a `.docx` suffix, the bibliography defaults to `reference.bib` in the project root, and the cache is written to the project's `.pandoc-cache/`. The CSL file, Word reference document, Lua filter, and postprocessing scripts are bundled with the installed tool.
+## Files To Edit
 
-When working directly from the repository without installing the command, run the root shortcut for your platform.
+In your copied paper directory, edit the equivalents of:
 
-On Windows:
+- [temp.tex](<template/temp.tex>): title, authors, numbered affiliations, corresponding-author email, abstract, keywords, and body.
+- [reference.bib](<template/reference.bib>): bibliography entries.
+- [fig/](<template/fig/>): figures to keep with the manuscript.
 
-```powershell
-.\convert-docx.ps1
+The [BibTeX style](<template/gbt7714.bst>) stays with the paper for PDF compilation. The converter's [CSL](<src/lpt_docx/resources/gbt7714.csl>) and [Word style template](<src/lpt_docx/resources/reference.docx>) stay in the tool repository.
+
+### Optional VS Code Workflow
+
+Install [VS Code](https://code.visualstudio.com/download) and [LaTeX Workshop](https://marketplace.visualstudio.com/items?itemName=James-Yu.latex-workshop), then open the copied paper directory, not the converter repository:
+
+```console
+code .
 ```
 
-On Linux:
+The copied [editor settings](<template/.vscode/settings.json>) provide `latexmk` and `xelatex -> bibtex -> xelatex*2` recipes. Automatic builds are disabled; use `LaTeX Workshop: Build with recipe` when needed. The recipes use the active document name, so renaming the main file does not require editing them.
+
+## Conversion Options
+
+With no arguments, `lpt-docx` reads your copy of [temp.tex](<template/temp.tex>) in the current paper directory. The project root defaults to the input directory; output uses the input basename with a `.docx` suffix; bibliography defaults to the paper's [reference.bib](<template/reference.bib>); cache is written inside the paper's `.pandoc-cache/` directory. The converter takes its default Lua filter, CSL, and Word styles from its own package, not from the paper or the invocation directory.
+
+All existing options remain available:
+
+```console
+lpt-docx --help
+lpt-docx paper.tex --bibliography references.bib --output review.docx
+lpt-docx tex/paper.tex --project-root . --resource-dir extra-assets
+```
+
+Relative command-line paths use the invocation directory. TeX image paths use the manuscript project root and `\graphicspath`. `--bibliography` and `--resource-dir` may be repeated; `--input`, `--csl`, `--reference-doc`, `--cache-dir`, and `--image-dpi` are also supported.
+
+Without installing or linking a command, call a repository launcher by absolute path from a paper directory:
 
 ```bash
-./convert-docx.sh
+/path/to/latex-pandoc-template/bin/lpt-docx manuscript.tex
 ```
 
-Both commands generate `temp.docx` and call the same Python core. The equivalent direct command is:
-
-```console
-uv run lpt-docx temp.tex --output temp.docx --bibliography reference.bib
+```powershell
+& "C:\tools\latex-pandoc-template\bin\lpt-docx.ps1" manuscript.tex
 ```
-
-During converter development, `uv tool install --editable /path/to/latex-pandoc-template` keeps the installed command connected to the checkout.
-
-The script automatically:
-
-- Expands a small compatibility subset such as `\gls`, `\SI`, `\SIrange`, `\ang`, and `\bm`.
-- Converts PDF figures referenced in LaTeX to PNG images that Pandoc can place in Word more reliably.
-- Runs Pandoc and the Lua filter to generate DOCX.
-- Adds three-line-table borders and table paragraph styles in Word, centers tables, and enables autofit width.
-- Normalizes project style IDs in the Word document to use the `Lpt...` prefix.
-
-For custom input, output, project root, bibliography, additional asset directory, style template, cache directory, or image DPI, pass `--input`, `--output`, `--project-root`, `--bibliography`, `--resource-dir`, `--csl`, `--reference-doc`, `--cache-dir`, or `--image-dpi`. `--bibliography` and `--resource-dir` may be repeated. Explicit relative command-line paths use the invocation directory; paths inside the TeX manuscript use the manuscript project root and `\graphicspath` entries.
-
-## Word Style Template
-
-Project style IDs in `reference.docx` use the `Lpt...` prefix, such as `LptHeading1`, `LptBodyText`, `LptTableCaption`, and `LptReferenceItem`, to avoid conflicts with Word or Pandoc built-in style IDs.
-
-After replacing or regenerating `reference.docx`, run:
-
-```console
-uv run python scripts/namespace-reference-docx-styles.py reference.docx
-```
-
-When adjusting heading styles, do not manually type numbers such as `1` or `1.1` in the body of `reference.docx`. Heading numbering should be bound through Word multilevel lists to `LptHeading1`, `LptHeading2`, and `LptHeading3`. The script above repairs those numbering relationships.
 
 ## Writing Tips
 
-- Keep title, authors and affiliations, abstract, and keywords at the beginning of the manuscript.
-- Replace the numbered affiliations and corresponding-author email in the `\author` block of [temp.tex](<temp.tex>). Keep author superscripts consistent with the affiliation numbers; see [Front Matter](<docs/technical-stack.md#front-matter>) for PDF and Word formatting details.
-- Use `\section`, `\subsection`, and `\subsubsection` for section levels.
-- Use the standard `figure` environment, with one `\caption` and one `\label`.
-- Prefer `booktabs` tables with `\toprule`, `\midrule`, and `\bottomrule`.
-- Use the standard `equation` environment and add `\label` for equations.
-- Use ordinary `\cite{...}` commands for references.
+- Start from the supplied template and replace its example content incrementally; arbitrary journal templates may use unsupported commands.
+- Keep author superscripts consistent with the numbered affiliations. When changing the email, update both the `mailto:` target and visible text; see [Front Matter](<docs/technical-stack.md#front-matter>).
+- Keep the explicit page break between keywords and the introduction if the body should start on a new page.
+- Use standard `\section`, `\subsection`, `\subsubsection`, `figure`, `table`, `equation`, `\label`, `\ref`, and `\cite` structures; prefer `booktabs` tables.
+- Keep figures inside the paper. PDF figures are rendered to cached PNGs for Word; PNG and JPG figures can be used directly.
+- Avoid journal-specific columns, headers, footers, and complex title pages during drafting. Migrate to the journal template when the content is ready.
 
-Avoid complex journal-template commands during drafting, such as custom two-column layout, headers and footers, complex title pages, or bilingual caption counter fallbacks. These can be handled later when moving the finished manuscript to the target journal template.
+## Maintenance And Migration
 
-## Figures
+The previous root-level manuscript files now live in the template directory. Conversion modules and resources now live entirely under the [Python package](<src/lpt_docx/>). Old root-level conversion wrappers and the legacy script wrapper have been replaced by the bin launchers; existing installed `lpt-docx` commands and CLI arguments remain supported. Reinstall or upgrade an existing non-editable tool installation to use the refactored version.
 
-For LaTeX PDF output, PDF vector figures can be used directly. During Word conversion, `scripts/prepare-pandoc-images.py` automatically renders PDF figures referenced by `\includegraphics` to PNG and writes them to `.pandoc-cache/images/`.
+For development, run from the repository root:
 
-Regular PNG and JPG images can be placed in `fig/` and referenced directly.
+```console
+uv sync
+uv run python -m unittest discover -s tests -v
+uv build
+```
 
-## Git Notes
+To repair the bundled Word style template after replacing it, run from the repository root:
 
-Generated files are ignored by `.gitignore`, including:
+```console
+uv run python -m lpt_docx.namespace_reference_docx_styles src/lpt_docx/resources/reference.docx
+```
 
-- `*.pdf`
-- `*.docx`
-- LaTeX auxiliary files
-- `.pandoc-cache/`
-- `.venv/`
-
-Usually, only source files, scripts, filters, reference files, and figure assets that should be kept in `fig/` need to be committed.
+Generated documents, LaTeX auxiliary files, Python environments, and caches are not source assets. The [template ignore rules](<template/.gitignore>) travel with each copied paper; original PDF figures remain versionable. See [Technical Notes](<docs/technical-stack.md>) for style maintenance and troubleshooting.
 
 ## Contributing
 
-Contributions are welcome, especially in these areas:
-
-- Report problems encountered during LaTeX compilation or Pandoc-to-Word conversion.
-- Improve beginner-friendly usage documentation.
-- Improve the Word style template, figure/table formatting, or reference formatting.
-- Share compatibility issues and fixes from different manuscript writing scenarios.
-
-Before submitting changes, make sure generated files are not included by accident. For non-trivial changes, use commit message body bullets to describe the main changes clearly.
+Reports of real conversion problems, documentation improvements, and contributions to figures, tables, references, or Word styles are welcome. Keep generated artifacts out of commits and describe non-trivial changes and validation in the commit body.

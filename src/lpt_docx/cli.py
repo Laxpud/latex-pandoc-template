@@ -1,4 +1,8 @@
-"""Command-line entry point for the LaTeX-to-DOCX conversion pipeline."""
+"""将论文项目的 LaTeX 输入转换为带项目样式的 Word 审阅稿。
+
+转换模块与默认样式由本包提供；论文输入、图片、缓存和输出属于调用方
+的论文项目，两者不通过切换当前工作目录或仓库外层路径相互依赖。
+"""
 
 from __future__ import annotations
 
@@ -15,8 +19,7 @@ from pathlib import Path
 from typing import Sequence
 
 
-PACKAGE_ROOT = Path(__file__).resolve().parent
-DEVELOPMENT_ROOT = Path(__file__).resolve().parents[2]
+RESOURCE_ROOT = Path(__file__).resolve().parent / "resources"
 GRAPHICSPATH_RE = re.compile(
     r"\\graphicspath\s*\{((?:\s*\{[^{}]*\}\s*)+)\}",
     re.DOTALL,
@@ -35,10 +38,6 @@ class ToolResources:
     lua_filter: Path
     csl: Path
     reference_doc: Path
-    compat_script: Path
-    image_script: Path
-    table_style_script: Path
-    style_normalizer_script: Path
 
 
 @dataclass(frozen=True)
@@ -139,34 +138,13 @@ def unique_paths(paths: Sequence[Path]) -> tuple[Path, ...]:
     return tuple(result)
 
 
-def bundled_path(packaged_relative: str, development_relative: str) -> Path:
-    packaged = PACKAGE_ROOT / "resources" / packaged_relative
-    if packaged.is_file():
-        return packaged
-    return DEVELOPMENT_ROOT / development_relative
-
-
 def load_tool_resources() -> ToolResources:
+    """定位包内的默认资源；源码运行和 wheel 安装使用相同目录结构。"""
+
     return ToolResources(
-        lua_filter=bundled_path("latex-crossref-cn.lua", "filters/latex-crossref-cn.lua"),
-        csl=bundled_path("gbt7714.csl", "gbt7714.csl"),
-        reference_doc=bundled_path("reference.docx", "reference.docx"),
-        compat_script=bundled_path(
-            "scripts/prepare-pandoc-compat.py",
-            "scripts/prepare-pandoc-compat.py",
-        ),
-        image_script=bundled_path(
-            "scripts/prepare-pandoc-images.py",
-            "scripts/prepare-pandoc-images.py",
-        ),
-        table_style_script=bundled_path(
-            "scripts/apply-docx-table-styles.py",
-            "scripts/apply-docx-table-styles.py",
-        ),
-        style_normalizer_script=bundled_path(
-            "scripts/namespace-reference-docx-styles.py",
-            "scripts/namespace-reference-docx-styles.py",
-        ),
+        lua_filter=RESOURCE_ROOT / "latex-crossref-cn.lua",
+        csl=RESOURCE_ROOT / "gbt7714.csl",
+        reference_doc=RESOURCE_ROOT / "reference.docx",
     )
 
 
@@ -305,10 +283,6 @@ def convert(
         (paths.csl, "CSL file"),
         (paths.reference_doc, "Reference DOCX"),
         (resources.lua_filter, "Pandoc Lua filter"),
-        (resources.compat_script, "Compatibility preprocessor"),
-        (resources.image_script, "Image preprocessor"),
-        (resources.table_style_script, "DOCX table postprocessor"),
-        (resources.style_normalizer_script, "DOCX style normalizer"),
     ):
         require_file(path, label)
 
@@ -331,11 +305,14 @@ def convert(
         compat_input = run_dir / "compat.tex"
         pandoc_input = run_dir / "pandoc.tex"
 
+        # 各阶段以包模块运行，使用同一解释器和依赖；不再从仓库外层寻找脚本。
+        # 阶段工作目录仍为论文项目，预处理文件单独放在本次转换的缓存目录。
         run_step(
             "Preparing LaTeX compatibility input for Pandoc",
             [
                 sys.executable,
-                str(resources.compat_script),
+                "-m",
+                "lpt_docx.prepare_pandoc_compat",
                 "--input",
                 str(paths.input_file),
                 "--output",
@@ -349,7 +326,8 @@ def convert(
             "Preparing images for Pandoc",
             [
                 sys.executable,
-                str(resources.image_script),
+                "-m",
+                "lpt_docx.prepare_pandoc_images",
                 "--input",
                 str(compat_input),
                 "--output",
@@ -399,12 +377,12 @@ def convert(
             run_step("Running Pandoc", pandoc_command, cwd=paths.project_root)
             run_step(
                 "Applying Word table styles",
-                [sys.executable, str(resources.table_style_script), str(temp_output)],
+                [sys.executable, "-m", "lpt_docx.apply_docx_table_styles", str(temp_output)],
                 cwd=paths.project_root,
             )
             run_step(
                 "Normalizing Word styles",
-                [sys.executable, str(resources.style_normalizer_script), str(temp_output)],
+                [sys.executable, "-m", "lpt_docx.namespace_reference_docx_styles", str(temp_output)],
                 cwd=paths.project_root,
             )
             os.replace(temp_output, paths.output_file)

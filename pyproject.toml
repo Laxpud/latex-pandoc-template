@@ -20,16 +20,8 @@ build-backend = "hatchling.build"
 package = true
 
 [tool.hatch.build.targets.wheel]
+# 转换模块和默认资源均位于包内，源码与安装包不再使用两套路径映射。
 packages = ["src/lpt_docx"]
-
-[tool.hatch.build.targets.wheel.force-include]
-"filters/latex-crossref-cn.lua" = "lpt_docx/resources/latex-crossref-cn.lua"
-"gbt7714.csl" = "lpt_docx/resources/gbt7714.csl"
-"reference.docx" = "lpt_docx/resources/reference.docx"
-"scripts/apply-docx-table-styles.py" = "lpt_docx/resources/scripts/apply-docx-table-styles.py"
-"scripts/namespace-reference-docx-styles.py" = "lpt_docx/resources/scripts/namespace-reference-docx-styles.py"
-"scripts/prepare-pandoc-compat.py" = "lpt_docx/resources/scripts/prepare-pandoc-compat.py"
-"scripts/prepare-pandoc-images.py" = "lpt_docx/resources/scripts/prepare-pandoc-images.py"
 
 # 配置 uv 使用清华镜像源加速下载
 [[tool.uv.index]]

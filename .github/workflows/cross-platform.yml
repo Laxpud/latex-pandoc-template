@@ -48,19 +48,24 @@ jobs:
 
       - name: Run installed CLI outside repository
         working-directory: ${{ runner.temp }}
-        run: uv tool run --from "${{ github.workspace }}" lpt-docx "${{ github.workspace }}/temp.tex" --project-root "${{ github.workspace }}" --bibliography "${{ github.workspace }}/reference.bib" --output "${{ runner.temp }}/installed-cli.docx"
+        run: uv tool run --from "${{ github.workspace }}" lpt-docx "${{ github.workspace }}/template/temp.tex" --output "${{ runner.temp }}/installed-cli.docx"
 
       - name: Validate installed CLI output
         run: uv run python -m zipfile -t "${{ runner.temp }}/installed-cli.docx"
 
-      - name: Run Bash entry point
+      - name: Run Bash entry point through symlink
         if: runner.os == 'Linux'
-        run: ./convert-docx.sh --output .pandoc-cache/ci-wrapper.docx
+        working-directory: ${{ runner.temp }}
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/lpt-bin"
+          ln -s "$GITHUB_WORKSPACE/bin/lpt-docx" "$RUNNER_TEMP/lpt-bin/lpt-docx"
+          "$RUNNER_TEMP/lpt-bin/lpt-docx" "$GITHUB_WORKSPACE/template/temp.tex" --output "$GITHUB_WORKSPACE/.pandoc-cache/ci-wrapper.docx"
 
       - name: Run PowerShell entry point
         if: runner.os == 'Windows'
         shell: powershell
-        run: .\convert-docx.ps1 --output .pandoc-cache\ci-wrapper.docx
+        run: .\bin\lpt-docx.ps1 template\temp.tex --output .pandoc-cache\ci-wrapper.docx
 
       - name: Validate wrapper output
         run: uv run python -m zipfile -t .pandoc-cache/ci-wrapper.docx

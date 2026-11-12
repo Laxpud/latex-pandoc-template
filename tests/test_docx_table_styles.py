@@ -9,12 +9,13 @@ from xml.etree import ElementTree as ET
 
 
 ROOT = Path(__file__).resolve().parents[1]
-FIGURE_PATH = ROOT / "fig" / "example-fig-2.png"
-FILTER_PATH = ROOT / "filters" / "latex-crossref-cn.lua"
-REFERENCE_DOCX = ROOT / "reference.docx"
-STYLE_NORMALIZER_PATH = ROOT / "scripts" / "namespace-reference-docx-styles.py"
-TABLE_STYLE_SCRIPT = ROOT / "scripts" / "apply-docx-table-styles.py"
-COMPAT_PREP_SCRIPT = ROOT / "scripts" / "prepare-pandoc-compat.py"
+PACKAGE_ROOT = ROOT / "src" / "lpt_docx"
+FIGURE_PATH = ROOT / "template" / "fig" / "example-fig-2.png"
+FILTER_PATH = PACKAGE_ROOT / "resources" / "latex-crossref-cn.lua"
+REFERENCE_DOCX = PACKAGE_ROOT / "resources" / "reference.docx"
+STYLE_NORMALIZER_PATH = PACKAGE_ROOT / "namespace_reference_docx_styles.py"
+TABLE_STYLE_SCRIPT = PACKAGE_ROOT / "apply_docx_table_styles.py"
+COMPAT_PREP_SCRIPT = PACKAGE_ROOT / "prepare_pandoc_compat.py"
 WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 WP_NS = "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
 VAL = f"{{{WORD_NS}}}val"

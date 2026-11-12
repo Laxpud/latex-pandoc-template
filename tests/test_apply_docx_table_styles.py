@@ -9,7 +9,7 @@ from lxml import etree as ET
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SCRIPT_PATH = ROOT / "scripts" / "apply-docx-table-styles.py"
+SCRIPT_PATH = ROOT / "src" / "lpt_docx" / "apply_docx_table_styles.py"
 WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 MC_NS = "http://schemas.openxmlformats.org/markup-compatibility/2006"
 

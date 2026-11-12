@@ -7,7 +7,7 @@ from xml.etree import ElementTree as ET
 
 
 ROOT = Path(__file__).resolve().parents[1]
-NORMALIZER_PATH = ROOT / "scripts" / "namespace-reference-docx-styles.py"
+NORMALIZER_PATH = ROOT / "src" / "lpt_docx" / "namespace_reference_docx_styles.py"
 WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 VAL = f"{{{WORD_NS}}}val"
 STYLE_ID = f"{{{WORD_NS}}}styleId"

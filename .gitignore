@@ -30,12 +30,12 @@
 # Generated documents
 *.docx
 *.pdf
-!reference.docx
-!fig/
-!fig/*.pdf
-!fig/**/*.pdf
+!src/lpt_docx/resources/reference.docx
+!template/fig/*.pdf
+!template/fig/**/*.pdf
 .pandoc-cache/
 .venv/
+dist/
 __pycache__/
 *.pyc
 

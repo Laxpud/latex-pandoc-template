@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MODULE_PATH = ROOT / "scripts" / "prepare-pandoc-compat.py"
+MODULE_PATH = ROOT / "src" / "lpt_docx" / "prepare_pandoc_compat.py"
 
 
 def load_module():

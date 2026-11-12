@@ -6,7 +6,7 @@
 - ✅ **[Project TODO](TODO.md)**: Active documentation and conversion work.
 - 🤝 **[Contributing](#contributing)**: Report issues, share use cases, or help improve the template.
 
-This is a minimal LaTeX template for drafting academic manuscripts. It keeps common paper structures such as title, authors, abstract, keywords, sections, figures, tables, equations, cross references, and references, while avoiding complex journal-specific layout commands so the manuscript can be converted to a Word review draft with Pandoc.
+This is a minimal LaTeX template for drafting academic manuscripts. It keeps common paper structures such as title, authors and affiliations, abstract, keywords, sections, figures, tables, equations, cross references, and references, while avoiding complex journal-specific layout commands so the manuscript can be converted to a Word review draft with Pandoc.
 
 If this template helps you avoid some LaTeX-to-Word conversion pain, please consider starring the repository. Issues, usage stories, and contributions are also welcome.
 
@@ -96,7 +96,7 @@ Start with this repository's `temp.tex` and replace its example content incremen
 
 If you are new to LaTeX, you usually only need to focus on:
 
-- `temp.tex`: the manuscript source. Edit the title, authors, abstract, keywords, sections, figures, tables, equations, and citations here.
+- [temp.tex](<temp.tex>): the manuscript source. Edit the title, authors, affiliations, corresponding-author email, abstract, keywords, sections, figures, tables, equations, and citations here.
 - `reference.bib`: the BibTeX reference database. Add journal papers, books, web pages, and other references here.
 - `fig/`: the figure directory. Put the PNG, JPG, or PDF images used by the manuscript here.
 
@@ -196,7 +196,8 @@ When adjusting heading styles, do not manually type numbers such as `1` or `1.1`
 
 ## Writing Tips
 
-- Keep title, authors, abstract, and keywords at the beginning of the manuscript.
+- Keep title, authors and affiliations, abstract, and keywords at the beginning of the manuscript.
+- Replace the numbered affiliations and corresponding-author email in the `\author` block of [temp.tex](<temp.tex>). Keep author superscripts consistent with the affiliation numbers; see [Front Matter](<docs/technical-stack.md#front-matter>) for PDF and Word formatting details.
 - Use `\section`, `\subsection`, and `\subsubsection` for section levels.
 - Use the standard `figure` environment, with one `\caption` and one `\label`.
 - Prefer `booktabs` tables with `\toprule`, `\midrule`, and `\bottomrule`.

@@ -138,7 +138,10 @@ local function meta_inlines(meta_value)
   if not meta_value then
     return {}
   end
-  if meta_value.t == "MetaInlines" then
+  -- Pandoc 的 Lua 接口会将行内元数据暴露为 Inlines，而不一定带有
+  -- MetaInlines 标签。保留原节点，避免作者单位的上标、换行和邮箱链接
+  -- 被下方的纯文本回退压平；标题和日期中的行内格式也沿用相同处理。
+  if meta_value.t == "MetaInlines" or pandoc.utils.type(meta_value) == "Inlines" then
     return meta_value
   end
   if meta_value.t == "MetaString" then
@@ -844,11 +847,22 @@ local function style_references(div)
   return div
 end
 
+local function is_page_break_marker(block)
+  -- 兼容预处理将独占一行的分页命令换成此空锚点；只消费这个内部标记，
+  -- 不将普通正文锚点或其他章节标题变为分页。
+  return block.t == "Div" and block.identifier == "lpt-internal-page-break" and #block.content == 0
+end
+
 local function rewrite_blocks(blocks)
   local rewritten = {}
 
   for _, block in ipairs(blocks) do
-    if is_equation_image_div(block) and refs[block.identifier] then
+    if FORMAT == "docx" and is_page_break_marker(block) then
+      -- 将内部锚点替换为 Word 显式分页符，输出中不保留该锚点。
+      table.insert(rewritten, pandoc.RawBlock(
+        "openxml", "<w:p><w:r><w:br w:type=\"page\"/></w:r></w:p>"
+      ))
+    elseif is_equation_image_div(block) and refs[block.identifier] then
       table.insert(rewritten, equation_image_paragraph(block, refs[block.identifier]))
     elseif block.t == "Figure" then
       if block.identifier and refs[block.identifier] then

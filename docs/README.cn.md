@@ -6,7 +6,7 @@
 - ✅ **[项目 TODO](../TODO.md)**：当前文档和转换流程维护事项。
 - 🤝 **[参与贡献](#参与贡献)**：报告问题、分享使用场景或一起改进模板。
 
-这是一个面向论文初稿写作的极简 LaTeX 模板。它保留标题、作者、摘要、关键词、章节、图表、公式、交叉引用和参考文献等常用论文结构，同时尽量减少复杂期刊排版命令，方便后续用 Pandoc 转成 Word 审阅稿。
+这是一个面向论文初稿写作的极简 LaTeX 模板。它保留标题、作者及单位、摘要、关键词、章节、图表、公式、交叉引用和参考文献等常用论文结构，同时尽量减少复杂期刊排版命令，方便后续用 Pandoc 转成 Word 审阅稿。
 
 如果这个模板帮你少踩了一些 LaTeX 和 Word 转换的坑，欢迎给仓库点个 Star。也欢迎你提交问题、分享使用场景，或一起改进这个模板。
 
@@ -96,7 +96,7 @@ PDF 编译仍使用 TeX Live 提供的 XeLaTeX 和 BibTeX。
 
 如果你刚开始接触 LaTeX，通常只需要关注这几个位置：
 
-- `temp.tex`：论文正文。标题、作者、摘要、关键词、章节、图表、公式和引用都从这里改。
+- [temp.tex](<../temp.tex>)：论文正文。标题、作者、单位、通讯作者邮箱、摘要、关键词、章节、图表、公式和引用都从这里改。
 - `reference.bib`：参考文献数据库。新增论文、书籍、网页等文献条目时改这里。
 - `fig/`：正文图片目录。把论文中需要使用的 PNG、JPG、PDF 图片放到这里。
 
@@ -196,7 +196,8 @@ uv run python scripts/namespace-reference-docx-styles.py reference.docx
 
 ## 写作建议
 
-- 标题、作者、摘要和关键词保留在正文开头。
+- 标题、作者及单位、摘要和关键词保留在正文开头。
+- 在 [temp.tex](<../temp.tex>) 的 `\author` 中替换编号单位和通讯作者邮箱，保持作者姓名后的上标与单位编号一致；PDF 与 Word 的排版差异见 [Front Matter](<technical-stack.md#front-matter>)。
 - 正文章节使用 `\section`、`\subsection`、`\subsubsection`。
 - 图片使用标准 `figure` 环境，并保留一个 `\caption` 和一个 `\label`。
 - 表格优先使用 `booktabs` 的 `\toprule`、`\midrule`、`\bottomrule`。

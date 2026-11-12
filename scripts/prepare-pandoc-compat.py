@@ -2,8 +2,8 @@
 """为 Pandoc 转换准备 LaTeX 兼容输入。
 
 这个脚本只覆盖当前模板需要的窄子集：常用 glossary 宏、常用
-siunitx 宏、`\bm`、子图相对宽度标记，以及带 `eq:` 标签的编号公式
-SVG 化。它不是完整 LaTeX 解释器，遇到超出约定的复杂宏时会尽量
+siunitx 宏、`\bm`、子图相对宽度标记、独占一行的显式分页，以及带
+`eq:` 标签的编号公式 SVG 化。它不是完整 LaTeX 解释器，遇到超出约定的复杂宏时会尽量
 保持原文。
 """
 
@@ -60,6 +60,12 @@ INCLUDEGRAPHICS_RE = re.compile(r"\\includegraphics\b")
 RELATIVE_WIDTH_RE = re.compile(
     r"^\s*(?P<factor>(?:\d+(?:\.\d*)?|\.\d+))?\s*"
     r"\\(?P<base>line|text|column)width\s*$"
+)
+PAGE_BREAK_OR_LITERAL_RE = re.compile(
+    r"^[ \t]*\\begin\s*\{(?P<literal>verbatim\*?|Verbatim\*?|lstlisting|minted)\}"
+    r".*?\\end\s*\{(?P=literal)\}"
+    r"|(?P<pagebreak>^[ \t]*\\(?:newpage|clearpage)[ \t]*(?:%[^\r\n]*)?\r?$)",
+    re.MULTILINE | re.DOTALL,
 )
 DEGREE_SIGN = "\N{DEGREE SIGN}"
 
@@ -594,6 +600,28 @@ def rewrite_labeled_equations(
     return EQUATION_RE.sub(repl, text), rendered_count
 
 
+def annotate_page_breaks(text: str) -> str:
+    r"""把正文中独占一行的分页命令换成 Pandoc 能保留的空锚点。
+
+    默认 LaTeX reader 会丢弃 `\clearpage` 和 `\newpage`；全局启用
+    `raw_tex` 又会改变现有子图等结构的解析，因此这里只传递分页标记。
+    标记随后由 Lua filter 替换成 Word 分页符，原始 TeX 不受影响。
+    跳过导言区和常见原样输出环境，不展开自定义宏或解释 TeX 条件。
+    """
+
+    body = re.search(r"\\begin\s*\{\s*document\s*\}", text)
+    if body is None:
+        return text
+
+    def replace(match: re.Match[str]) -> str:
+        if match.group("pagebreak") is None:
+            return match.group(0)
+        # 空行让锚点独立成块，避免分页标记混入相邻的正文段落。
+        return "\n\n\\hypertarget{lpt-internal-page-break}{}\n\n"
+
+    return text[: body.end()] + PAGE_BREAK_OR_LITERAL_RE.sub(replace, text[body.end() :])
+
+
 def prepare_tex_text(
     tex_text: str,
     input_dir: Path,
@@ -607,6 +635,7 @@ def prepare_tex_text(
     text = expand_siunitx(text)
     text = replace_bm(text)
     text = annotate_subfigure_widths(text)
+    text = annotate_page_breaks(text)
     rendered_count = 0
     # 暂时关闭编号公式 SVG 化，回退到 Pandoc/Word 原生公式路径，便于比较
     # SVG 图片基线和公式编号纵向对齐问题。恢复 SVG 路径时取消下面几行注释。

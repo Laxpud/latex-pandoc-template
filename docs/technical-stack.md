@@ -347,16 +347,20 @@ Word 不直接支持将 PDF 矢量图作为普通图片稳定写入 DOCX。为�
 
 ### Front Matter
 
-filter 会读取 Pandoc meta 中的 `title`、`author`、`date` 和 `abstract`，转换为正文开头的自定义样式段落：
+filter 会读取 Pandoc meta 中的 `title`、`author`、`date` 和 `abstract`，转换为正文开头的自定义样式段落。行内元数据同时识别 `MetaInlines` 标签和 Lua 接口的 `Inlines` 类型，直接保留原节点，避免上标、换行和链接被转为纯文本：
 
 - `LptPaperTitle`
 - `LptAuthorBlock`
 - `LptPaperDate`
 - `LptAbstract`
 
-作者之间使用不换行空格保持 Word 中的视觉间距稳定。摘要首段会自动补齐或保留 `摘要：` 前缀。
+使用 `\and` 分隔的作者之间会插入不换行空格，保持 Word 中的视觉间距稳定。摘要首段会自动补齐或保留 `摘要：` 前缀。
+
+[temp.tex](<../temp.tex>) 的 `\author` 示例将姓名、编号单位和通讯作者邮箱放在同一个作者信息块中。姓名后的 `\textsuperscript{1,2}` 对应单位编号，`*` 对应通讯作者；修改邮箱时需要同步替换 `\href{mailto:...}{...}` 的链接目标与显示文本。PDF 使用 `\parbox{0.8\textwidth}` 和 `\small` 限定单位区域宽度并缩小字号。Word 保留上标、换行和邮箱链接，整个信息块使用 `LptAuthorBlock`，不复刻 LaTeX 盒子宽度、局部字号或 `\\[0.25em]` 的精确行距。
 
 处理完成后，filter 会清空 meta 中的 title、author、date 和 abstract，避免 Pandoc DOCX writer 再按默认方式输出一遍。
+
+模板在关键词之后、引言之前使用 `\clearpage`，让正文从新的一页开始。Word 兼容预处理将正文中独占一行的 `\clearpage` 或 `\newpage` 换为内部空锚点 `lpt-internal-page-break`，再由 Lua filter 替换为显式分页符；其他章节不会因此自动另起一页。该处理跳过导言区和常见原样输出环境，不展开自定义宏，也不模拟 LaTeX 的浮动体清空行为。转换不全局开启 `raw_tex`，以免改变现有子图等结构的解析。
 
 ### 标题和正文
 

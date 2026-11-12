@@ -11,6 +11,7 @@
 \usepackage{subcaption}
 \usepackage{placeins}
 \usepackage[margin=2.54cm]{geometry}
+\usepackage[hidelinks]{hyperref} % 为通讯作者邮箱提供链接，PDF 中不显示链接边框或颜色。
 
 \providecommand{\doi}[1]{\textrm{\detokenize{#1}}}
 \providecommand{\V}[1]{\v{#1}}
@@ -36,7 +37,19 @@
 
 
 \title{适合Pandoc转Word的极简论文手稿示例 Minimal Manuscript Example for Pandoc-to-Word Conversion}
-\author{张三\thanks{通信作者：zhangsan@example.com} \and 李四}
+% 作者姓名后的上标对应下方单位编号；多单位作者列出多个编号，* 标记通讯作者。
+% 替换姓名、单位、地址和邮箱时，同步修改对应编号及 mailto: 链接目标。
+\author{%
+  张三\textsuperscript{1,*}, 李四\textsuperscript{1,2}\\[0.5em]
+  % parbox 限制 PDF 中单位信息的宽度并允许自动换行；Word 保留内容并使用作者样式。
+  \parbox{0.8\textwidth}{%
+    \centering\small
+    \textsuperscript{1}示例大学，示例学院，城市，邮政编码，中国\\[0.25em]
+    \textsuperscript{2}示例研究院，示例实验室，城市，邮政编码，中国\\[0.25em]
+    \textsuperscript{*}通讯作者：
+    \href{mailto:zhangsan@example.com}{zhangsan@example.com}%
+  }
+}
 \date{\today}
 
 \begin{document}
@@ -53,6 +66,9 @@
 \setlength{\rightskip}{\leftmargini}
 \noindent\textbf{关键词 Keywords：} Pandoc；LaTeX；Word；论文手稿 Manuscript；交叉引用 Cross references\par
 \endgroup
+
+% 标题、作者单位、摘要和关键词作为前置信息；正文从下一页开始。
+\clearpage
 
 \section{引言 Introduction}
 \label{sec:introduction}
